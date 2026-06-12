@@ -3,8 +3,10 @@ import { countedVerticalBindings } from "./helpers.ts"
 
 export type DiffSide = "LEFT" | "RIGHT"
 export type DiffAlign = "center" | "top" | "bottom"
+export const diffHunkKeys = { previous: ["{"], next: ["}"] } as const
 
 export interface DiffViewCtx {
+	readonly vimModeEnabled: boolean
 	readonly halfPage: number
 	readonly handleEscape: () => void
 	readonly openSelectedComment: () => void
@@ -22,15 +24,20 @@ export interface DiffViewCtx {
 	readonly openChangedFiles: () => void
 	readonly nextFile: () => void
 	readonly previousFile: () => void
+	readonly nextHunk: () => void
+	readonly previousHunk: () => void
 }
 
 const Diff = context<DiffViewCtx>()
 
 export const diffViewKeymap = Diff(
 	{ id: "diff.escape", title: "Close modal", keys: ["escape"], run: (s) => s.handleEscape() },
-	{ id: "diff.open-comment", title: "Open / add comment", keys: ["return"], run: (s) => s.openSelectedComment() },
-	{ id: "diff.toggle-range", title: "Toggle comment range", keys: ["v"], run: (s) => s.toggleRange() },
-	{ id: "diff.toggle-view", title: "Toggle split/unified", keys: ["shift+v"], run: (s) => s.toggleView() },
+	{ id: "diff.open-comment", title: "Open / add comment", keys: ["return"], when: (s) => !s.vimModeEnabled, run: (s) => s.openSelectedComment() },
+	{ id: "diff.open-comment-vim", title: "Open / add comment", keys: ["i"], when: (s) => s.vimModeEnabled, run: (s) => s.openSelectedComment() },
+	{ id: "diff.toggle-range", title: "Toggle comment range", keys: ["v"], when: (s) => !s.vimModeEnabled, run: (s) => s.toggleRange() },
+	{ id: "diff.toggle-range-vim", title: "Toggle comment range", keys: ["shift+v"], when: (s) => s.vimModeEnabled, run: (s) => s.toggleRange() },
+	{ id: "diff.toggle-view", title: "Toggle split/unified", keys: ["shift+v"], when: (s) => !s.vimModeEnabled, run: (s) => s.toggleView() },
+	{ id: "diff.toggle-view-vim", title: "Toggle split/unified", keys: ["s"], when: (s) => s.vimModeEnabled, run: (s) => s.toggleView() },
 	{ id: "diff.toggle-wrap", title: "Toggle wrap", keys: ["w"], run: (s) => s.toggleWrap() },
 	{ id: "diff.toggle-whitespace", title: "Toggle whitespace", keys: ["shift+w"], run: (s) => s.toggleWhitespace() },
 	{ id: "diff.reload", title: "Reload diff", keys: ["r"], run: (s) => s.reload() },
@@ -74,6 +81,8 @@ export const diffViewKeymap = Diff(
 	{ id: "diff.changed-files", title: "Changed files", keys: ["f"], run: (s) => s.openChangedFiles() },
 	{ id: "diff.next-file", title: "Next file", keys: ["]"], run: (s) => s.nextFile() },
 	{ id: "diff.previous-file", title: "Previous file", keys: ["["], run: (s) => s.previousFile() },
+	{ id: "diff.next-hunk", title: "Next hunk", keys: [...diffHunkKeys.next], run: (s) => s.nextHunk() },
+	{ id: "diff.previous-hunk", title: "Previous hunk", keys: [...diffHunkKeys.previous], run: (s) => s.previousHunk() },
 
 	{ id: "diff.first", title: "First comment", keys: ["g g"], run: (s) => s.moveAnchorToBoundary("first") },
 	{ id: "diff.last", title: "Last comment", keys: ["shift+g"], run: (s) => s.moveAnchorToBoundary("last") },

@@ -1,11 +1,15 @@
 import { context } from "@ghui/keymap"
 
 export interface ThemeModalCtx {
+	readonly vimModeEnabled: boolean
+	readonly vimInsertMode: boolean
 	readonly filterMode: boolean
 	readonly hasFilteredResults: boolean
 	readonly closeWithoutSaving: () => void
 	readonly clearFilter: () => void
 	readonly enterFilterMode: () => void
+	readonly enterInsertMode: () => void
+	readonly leaveInsertMode: () => void
 	readonly toggleMode: () => void
 	readonly toggleTone: () => void
 	readonly confirmSelection: () => void
@@ -20,11 +24,13 @@ export const themeModalKeymap = Theme(
 		title: "Cancel",
 		keys: ["escape"],
 		run: (s) => {
-			if (s.filterMode) s.clearFilter()
+			if (s.vimModeEnabled && s.vimInsertMode) s.leaveInsertMode()
+			else if (s.filterMode) s.clearFilter()
 			else s.closeWithoutSaving()
 		},
 	},
 	{ id: "theme-modal.filter", title: "Filter themes", keys: ["/"], run: (s) => s.enterFilterMode() },
+	{ id: "theme-modal.insert", title: "Insert mode", keys: ["i"], when: (s) => s.vimModeEnabled && s.filterMode && !s.vimInsertMode, run: (s) => s.enterInsertMode() },
 	{ id: "theme-modal.toggle-mode", title: "Toggle fixed/system theme mode", keys: ["m"], when: (s) => !s.filterMode, run: (s) => s.toggleMode() },
 	{ id: "theme-modal.toggle-tone", title: "Toggle light/dark themes", keys: ["tab"], run: (s) => s.toggleTone() },
 	{

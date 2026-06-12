@@ -22,6 +22,7 @@ fork of [ghui](https://github.com/kitlangton/ghui) to make it work for local dif
 - `f`: open the changed-files navigator while viewing a diff
 - `left` / `right`: choose the deleted or added side while in split diff comment mode
 - `[` / `]`: switch files while viewing or commenting on a diff
+- `{` / `}`: jump to the previous or next diff hunk
 - `t`: choose a fixed theme, including `System` to match your terminal colors; press `m` in the theme picker to follow the OS light/dark appearance with separate theme choices
 - `q`: quit
 

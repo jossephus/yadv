@@ -4,11 +4,13 @@ import { colors } from "../colors.js"
 import { fitCell, HintRow, PlainLine, StandardModal, standardModalDims } from "../primitives.js"
 import type { CommentModalState } from "./types.js"
 
-const commentTextareaKeyBindings: TextareaOptions["keyBindings"] = [
+const defaultCommentTextareaKeyBindings: TextareaOptions["keyBindings"] = [
 	{ name: "return", action: "submit" },
 	{ name: "s", ctrl: true, action: "submit" },
 	{ name: "return", shift: true, action: "newline" },
 ]
+
+const vimCommentTextareaKeyBindings: TextareaOptions["keyBindings"] = [{ name: "return", action: "newline" }]
 
 const commentModalEditorKey = (state: CommentModalState) => {
 	const target = state.target
@@ -17,7 +19,7 @@ const commentModalEditorKey = (state: CommentModalState) => {
 	return target.kind
 }
 
-export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offsetLeft, offsetTop, onChange, onSubmit }: { state: CommentModalState; anchorLabel: string; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number; onChange: (body: string, cursor: number) => void; onSubmit: () => void }) => {
+export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offsetLeft, offsetTop, vimModeEnabled, vimInsertMode, onChange, onSubmit }: { state: CommentModalState; anchorLabel: string; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number; vimModeEnabled: boolean; vimInsertMode: boolean; onChange: (body: string, cursor: number) => void; onSubmit: () => void }) => {
 	const textareaRef = useRef<TextareaRenderable | null>(null)
 	const { contentWidth, bodyHeight } = standardModalDims(modalWidth, modalHeight)
 	const title = state.target.kind === "edit" ? "Edit comment" : "Comment"
@@ -42,10 +44,10 @@ export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offs
 			width={modalWidth}
 			height={modalHeight}
 			title={title}
-			headerRight={{ text: "enter save" }}
+			headerRight={{ text: vimModeEnabled ? (vimInsertMode ? "insert" : "normal") : "enter save" }}
 			subtitle={<PlainLine text={fitCell(anchorLabel, contentWidth)} fg={colors.muted} />}
 			bodyPadding={1}
-			footer={<HintRow items={[{ key: "enter", label: "save" }, { key: "shift-enter", label: "newline" }, { key: "esc", label: "cancel" }]} />}
+			footer={<HintRow items={vimModeEnabled ? [{ key: "i", label: "insert" }, { key: "esc", label: vimInsertMode ? "save" : "cancel" }] : [{ key: "enter", label: "save" }, { key: "shift-enter", label: "newline" }, { key: "esc", label: "cancel" }]} />}
 		>
 			{state.error ? <PlainLine text={fitCell(state.error, contentWidth)} fg={colors.error} /> : null}
 			<textarea
@@ -55,13 +57,13 @@ export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offs
 				height={editorHeight}
 				initialValue={state.body}
 				placeholder="Write a comment..."
-				focused
+				focused={!vimModeEnabled || vimInsertMode}
 				wrapMode="word"
 				textColor={colors.text}
 				focusedTextColor={colors.text}
 				placeholderColor={colors.muted}
 				cursorColor={colors.accent}
-				keyBindings={commentTextareaKeyBindings}
+				keyBindings={vimModeEnabled ? vimCommentTextareaKeyBindings : defaultCommentTextareaKeyBindings}
 				onContentChange={syncTextarea}
 				onCursorChange={syncTextarea}
 				onSubmit={onSubmit}

@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test"
 import {
 	buildStackedDiffFiles,
 	diffAnchorOnSide,
+	getDiffHunkRenderLines,
+	getStackedDiffHunks,
 	getDiffCommentAnchors,
 	getStackedDiffCommentAnchors,
 	minimizeWhitespaceDiffFiles,
@@ -48,6 +50,27 @@ describe("stacked diff helpers", () => {
 		expect(secondFileAnchor?.fileIndex).toBe(1)
 		expect(secondFileAnchor?.localRenderLine).toBe(1)
 		expect(secondFileAnchor?.renderLine).toBe(stacked[1]!.diffStartLine + 1)
+	})
+
+	test("tracks first changed rows in local and stacked diff coordinates", () => {
+		const [file] = splitPatchFiles(`diff --git a/hunks.ts b/hunks.ts
+--- a/hunks.ts
++++ b/hunks.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1
+@@ -10,2 +10,2 @@
+ const two = true
+-const beforeTwo = 2
++const afterTwo = 2`)
+		const stacked = buildStackedDiffFiles([file!], "unified", "none", 120)
+
+		expect(getDiffHunkRenderLines(file!, "unified", "none", 120)).toEqual([1, 4])
+		expect(getStackedDiffHunks(stacked, "unified", "none", 120)).toEqual([
+			{ fileIndex: 0, localRenderLine: 1, renderLine: stacked[0]!.diffStartLine + 1 },
+			{ fileIndex: 0, localRenderLine: 4, renderLine: stacked[0]!.diffStartLine + 4 },
+		])
 	})
 
 	test("keeps separate visual and color lines for wrapped unified diffs", () => {

@@ -3,27 +3,42 @@ import type { ThemeModalState } from "../../ui/modals.ts"
 import type { ThemeModalCtx } from "../themeModal.ts"
 
 export interface BuildThemeModalCtxInput {
+	readonly vimModeEnabled: boolean
+	readonly vimInsertMode: boolean
 	readonly themeModal: ThemeModalState
 	readonly closeThemeModal: (confirm: boolean) => void
 	readonly updateThemeQuery: (query: string, options?: { readonly previewFirst?: boolean; readonly filterMode?: boolean }) => void
 	readonly toggleThemeMode: () => void
 	readonly toggleThemeTone: () => void
 	readonly moveThemeSelection: (delta: -1 | 1) => void
+	readonly enterVimInsertMode: () => void
+	readonly leaveVimInsertMode: () => void
 }
 
 export const buildThemeModalCtx = ({
 	themeModal,
+	vimModeEnabled,
+	vimInsertMode,
 	closeThemeModal,
 	updateThemeQuery,
 	toggleThemeMode,
 	toggleThemeTone,
 	moveThemeSelection,
+	enterVimInsertMode,
+	leaveVimInsertMode,
 }: BuildThemeModalCtxInput): ThemeModalCtx => ({
+	vimModeEnabled,
+	vimInsertMode,
 	filterMode: themeModal.filterMode,
 	hasFilteredResults: filterThemeDefinitions(themeModal.query, themeModal.tone).length > 0,
 	closeWithoutSaving: () => closeThemeModal(false),
 	clearFilter: () => updateThemeQuery("", { filterMode: false }),
-	enterFilterMode: () => updateThemeQuery("", { filterMode: true }),
+	enterFilterMode: () => {
+		enterVimInsertMode()
+		updateThemeQuery("", { filterMode: true })
+	},
+	enterInsertMode: enterVimInsertMode,
+	leaveInsertMode: leaveVimInsertMode,
 	toggleMode: toggleThemeMode,
 	toggleTone: toggleThemeTone,
 	confirmSelection: () => closeThemeModal(true),

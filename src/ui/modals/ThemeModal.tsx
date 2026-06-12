@@ -4,12 +4,16 @@ import type { ThemeModalState } from "./types.js"
 
 export const ThemeModal = ({
 	state,
+	vimModeEnabled,
+	vimInsertMode,
 	modalWidth,
 	modalHeight,
 	offsetLeft,
 	offsetTop,
 }: {
 	state: ThemeModalState
+	vimModeEnabled: boolean
+	vimInsertMode: boolean
 	modalWidth: number
 	modalHeight: number
 	offsetLeft: number
@@ -60,10 +64,11 @@ export const ThemeModal = ({
 			footer={
 				<HintRow
 					items={[
+						...(vimModeEnabled && state.filterMode ? [{ key: "i", label: vimInsertMode ? "typing" : "insert" }] : []),
 						{ key: "m", label: state.mode === "fixed" ? "follow system" : "fixed" },
 						{ key: "tab", label: `${nextToneLabel} mode` },
 						{ key: "enter", label: "save" },
-						{ key: "esc", label: "cancel" },
+						{ key: "esc", label: vimModeEnabled && vimInsertMode ? "normal" : "cancel" },
 					]}
 				/>
 			}

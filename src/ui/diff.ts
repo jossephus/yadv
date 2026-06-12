@@ -49,6 +49,12 @@ export type StackedDiffCommentAnchor = DiffCommentAnchor & {
 	readonly localRenderLine: number
 }
 
+export interface StackedDiffHunk {
+	readonly fileIndex: number
+	readonly localRenderLine: number
+	readonly renderLine: number
+}
+
 export type PullRequestDiffState = Data.TaggedEnum<{
 	Loading: {}
 	Ready: { readonly patch: string; readonly files: readonly DiffFilePatch[] }
@@ -547,6 +553,87 @@ export const getStackedDiffCommentAnchors = (
 			fileIndex: stackedFile.index,
 			localRenderLine: anchor.renderLine,
 			renderLine: stackedFile.diffStartLine + anchor.renderLine,
+		})),
+	)
+
+export const getDiffHunkRenderLines = (file: DiffFilePatch, view: DiffView = "unified", wrapMode: DiffWrapMode = "none", width = 120): readonly number[] => {
+	const lines = file.patch.split("\n")
+	const contentWidth = diffContentWidth(lines, view, width)
+	const hunks: number[] = []
+	let renderLine = 0
+	let inHunk = false
+	let pendingHunkStart = false
+	let deletions: number[] = []
+	let additions: number[] = []
+
+	const flushChangeBlock = () => {
+		if (deletions.length === 0 && additions.length === 0) return
+		if (view === "split") {
+			const rows = Math.max(deletions.length, additions.length)
+			for (let index = 0; index < rows; index++) {
+				const deletionCount = index < deletions.length ? deletions[index]! : 1
+				const additionCount = index < additions.length ? additions[index]! : 1
+				renderLine += Math.max(deletionCount, additionCount)
+			}
+		} else {
+			for (const deletion of deletions) renderLine += deletion
+			for (const addition of additions) renderLine += addition
+		}
+		deletions = []
+		additions = []
+	}
+
+	for (const line of lines) {
+		if (line.startsWith("@@")) {
+			flushChangeBlock()
+			inHunk = true
+			pendingHunkStart = true
+			continue
+		}
+
+		if (!inHunk) continue
+
+		const firstChar = line[0]
+		if (firstChar === "\\") continue
+
+		if (firstChar === "-") {
+			if (pendingHunkStart) {
+				hunks.push(renderLine)
+				pendingHunkStart = false
+			}
+			deletions.push(estimatedWrappedLineCount(line.slice(1), contentWidth, wrapMode))
+			continue
+		}
+
+		if (firstChar === "+") {
+			if (pendingHunkStart) {
+				hunks.push(renderLine)
+				pendingHunkStart = false
+			}
+			additions.push(estimatedWrappedLineCount(line.slice(1), contentWidth, wrapMode))
+			continue
+		}
+
+		if (firstChar === " ") {
+			flushChangeBlock()
+			renderLine += estimatedWrappedLineCount(line.slice(1), contentWidth, wrapMode)
+		}
+	}
+
+	return hunks
+}
+
+export const getStackedDiffHunks = (
+	stackedFiles: readonly StackedDiffFilePatch[],
+	view: DiffView = "unified",
+	wrapMode: DiffWrapMode = "none",
+	width = 120,
+): readonly StackedDiffHunk[] =>
+	stackedFiles.flatMap((stackedFile) =>
+		getDiffHunkRenderLines(stackedFile.file, view, wrapMode, width).map((localRenderLine) => ({
+			fileIndex: stackedFile.index,
+			localRenderLine,
+			renderLine: stackedFile.diffStartLine + localRenderLine,
 		})),
 	)
 

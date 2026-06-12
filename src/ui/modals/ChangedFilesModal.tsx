@@ -8,6 +8,8 @@ export const ChangedFilesModal = ({
 	state,
 	results,
 	totalCount,
+	vimModeEnabled,
+	vimInsertMode,
 	modalWidth,
 	modalHeight,
 	offsetLeft,
@@ -16,6 +18,8 @@ export const ChangedFilesModal = ({
 	state: ChangedFilesModalState
 	results: readonly ChangedFileSearchResult[]
 	totalCount: number
+	vimModeEnabled: boolean
+	vimInsertMode: boolean
 	modalWidth: number
 	modalHeight: number
 	offsetLeft: number
@@ -45,8 +49,9 @@ export const ChangedFilesModal = ({
 				<HintRow
 					items={[
 						{ key: "↑↓", label: "move" },
+						...(vimModeEnabled ? [{ key: "i", label: vimInsertMode ? "typing" : "insert" }, { key: "esc", label: vimInsertMode ? "normal" : "close" }] : []),
 						{ key: "enter", label: "jump" },
-						{ key: "esc", label: "close" },
+						...(vimModeEnabled ? [] : [{ key: "esc", label: "close" }]),
 					]}
 				/>
 			}

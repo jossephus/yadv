@@ -9,6 +9,7 @@ import { clampCommandIndex, defineCommand, filterCommands, sortCommandsByActiveS
 import type { LocalDiffTarget } from "./diffTarget.js"
 import { errorMessage } from "./errors.js"
 import { appKeymap } from "./keymap/all.js"
+import { diffHunkKeys } from "./keymap/diffView.js"
 import { buildChangedFilesModalCtx } from "./keymap/contexts/changedFilesModalCtx.js"
 import { buildCommandPaletteCtx } from "./keymap/contexts/commandPaletteCtx.js"
 import { buildThemeModalCtx } from "./keymap/contexts/themeModalCtx.js"
@@ -19,6 +20,7 @@ import {
 	diffAnchorOnSide,
 	diffCommentAnchorLabel,
 	diffFileStats,
+	getStackedDiffHunks,
 	getStackedDiffCommentAnchors,
 	minimizeWhitespaceDiffFiles,
 	PullRequestDiffState,
@@ -94,6 +96,8 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	const [diffPreferredSide, setDiffPreferredSide] = useState<"LEFT" | "RIGHT" | null>(null)
 	const [diffCommentRangeStartIndex, setDiffCommentRangeStartIndex] = useState<number | null>(null)
 	const [notice, setNotice] = useState<string | null>(null)
+	const [vimModeEnabled, setVimModeEnabled] = useState(false)
+	const [vimInsertMode, setVimInsertMode] = useState(false)
 	const diffScrollRef = useRef<ScrollBoxRenderable | null>(null)
 	const suppressNextDiffCommentScrollRef = useRef(false)
 
@@ -102,7 +106,20 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 		globalThis.setTimeout(() => setNotice((current) => (current === message ? null : current)), 2000)
 	}, [])
 
-	const closeActiveModal = useCallback(() => setActiveModal("none"), [])
+	const closeActiveModal = useCallback(() => {
+		setVimInsertMode(false)
+		setActiveModal("none")
+	}, [])
+	const enterVimInsertMode = useCallback(() => setVimInsertMode(true), [])
+	const leaveVimInsertMode = useCallback(() => setVimInsertMode(false), [])
+	const toggleVimMode = useCallback(() => {
+		setVimModeEnabled((current) => {
+			const next = !current
+			setVimInsertMode(false)
+			flashNotice(next ? "Vim mode enabled" : "Vim mode disabled")
+			return next
+		})
+	}, [flashNotice])
 	const { openThemeModal, closeThemeModal, moveThemeSelection, updateThemeQuery, toggleThemeMode, toggleThemeTone, editThemeQuery } = useThemeModal({
 		themeModal,
 		setThemeModal,
@@ -132,6 +149,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	}, [branch, displayFiles, repoName])
 	const diffCommentThreads = useMemo(() => groupDiffCommentThreads(localComments), [localComments])
 	const diffCommentAnchors = useMemo(() => getStackedDiffCommentAnchors(stackedDiffFiles, diffRenderView, diffWrapMode, Math.max(20, width)), [stackedDiffFiles, diffRenderView, diffWrapMode, width])
+	const diffHunks = useMemo(() => getStackedDiffHunks(stackedDiffFiles, diffRenderView, diffWrapMode, Math.max(20, width)), [stackedDiffFiles, diffRenderView, diffWrapMode, width])
 	const selectedDiffCommentAnchor = diffCommentAnchors[diffCommentAnchorIndex] ?? null
 	const diffCommentRangeStartAnchor = diffCommentRangeStartIndex === null ? null : diffCommentAnchors[diffCommentRangeStartIndex] ?? null
 	const selectedDiffCommentRange = diffCommentRangeSelection(diffCommentRangeStartAnchor, selectedDiffCommentAnchor)
@@ -154,6 +172,10 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	useEffect(() => {
 		setDiffRenderView(width >= 100 ? "split" : "unified")
 	}, [width])
+
+	useEffect(() => {
+		if (!vimModeEnabled && vimInsertMode) setVimInsertMode(false)
+	}, [vimInsertMode, vimModeEnabled])
 
 	useEffect(() => {
 		if (displayFiles.length === 0) {
@@ -311,19 +333,46 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 		[diffCommentAnchors, diffCommentThreadAnchors, selectedDiffCommentAnchor, setDiffFileIndex],
 	)
 
+	const moveDiffHunk = useCallback(
+		(direction: 1 | -1) => {
+			if (diffHunks.length === 0) return
+			const currentLine = selectedDiffCommentAnchor?.renderLine ?? diffScrollRef.current?.scrollTop ?? 0
+			const nextHunk =
+				direction > 0 ? diffHunks.find((hunk) => hunk.renderLine > currentLine) ?? null : [...diffHunks].reverse().find((hunk) => hunk.renderLine < currentLine) ?? null
+			if (!nextHunk) return
+			const targetSide = diffPreferredSide ?? selectedDiffCommentAnchor?.side ?? "RIGHT"
+			const nextAnchor =
+				diffCommentAnchors.find((anchor) => anchor.renderLine === nextHunk.renderLine && anchor.side === targetSide) ??
+				diffCommentAnchors.find((anchor) => anchor.renderLine === nextHunk.renderLine) ??
+				diffCommentAnchors.find((anchor) => anchor.fileIndex === nextHunk.fileIndex && anchor.renderLine >= nextHunk.renderLine) ??
+				null
+			if (!nextAnchor) {
+				setDiffFileIndex(nextHunk.fileIndex)
+				ensureDiffLineVisible(nextHunk.renderLine)
+				return
+			}
+			setDiffCommentAnchorIndex(diffCommentAnchors.indexOf(nextAnchor))
+			setDiffFileIndex(nextAnchor.fileIndex)
+			ensureDiffLineVisible(nextAnchor.renderLine)
+		},
+		[diffCommentAnchors, diffHunks, diffPreferredSide, ensureDiffLineVisible, selectedDiffCommentAnchor, setDiffFileIndex],
+	)
+
 	const openDiffCommentModal = useCallback(() => {
+		setVimInsertMode(vimModeEnabled)
 		setCommentModal({ ...initialCommentModalState, target: { kind: "diff" } })
 		setActiveModal("comment")
-	}, [])
+	}, [vimModeEnabled])
 
 	const openReplyToSelectedComment = useCallback(() => {
 		const comment = selectedDiffCommentThread[selectedDiffCommentThread.length - 1]
 		const anchorLabel = selectedDiffCommentLabel ?? "Selected thread"
 		if (!comment) return
 		setCommentThreadModal(initialCommentThreadModalState)
+		setVimInsertMode(vimModeEnabled)
 		setCommentModal({ ...initialCommentModalState, target: { kind: "reply", inReplyTo: comment.id, anchorLabel } })
 		setActiveModal("comment")
-	}, [selectedDiffCommentLabel, selectedDiffCommentThread])
+	}, [selectedDiffCommentLabel, selectedDiffCommentThread, vimModeEnabled])
 
 	const openSelectedDiffComment = useCallback(() => {
 		if (!selectedDiffCommentAnchor) return
@@ -387,13 +436,16 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	const modalOffsetTop = Math.max(0, centeredOffset(height, modalHeight))
 	const commands = useMemo<readonly AppCommand[]>(
 		() => [
-			defineCommand({ id: "diff.comment", title: "Comment on Selected Line", scope: "Diff", shortcut: "enter", run: openSelectedDiffComment }),
-			defineCommand({ id: "diff.range", title: "Toggle Comment Range", scope: "Diff", shortcut: "v", run: toggleDiffCommentRange }),
+			defineCommand({ id: "diff.comment", title: "Comment on Selected Line", scope: "Diff", shortcut: vimModeEnabled ? "i" : "enter", run: openSelectedDiffComment }),
+			defineCommand({ id: "diff.range", title: "Toggle Comment Range", scope: "Diff", shortcut: vimModeEnabled ? "V" : "v", run: toggleDiffCommentRange }),
+			defineCommand({ id: "vim-mode.toggle", title: `Vim Mode: ${vimModeEnabled ? "Off" : "On"}`, scope: "View", run: toggleVimMode }),
+			defineCommand({ id: "diff.previous-hunk", title: "Previous Hunk", scope: "Navigation", shortcut: diffHunkKeys.previous[0], run: () => moveDiffHunk(-1) }),
+			defineCommand({ id: "diff.next-hunk", title: "Next Hunk", scope: "Navigation", shortcut: diffHunkKeys.next[0], run: () => moveDiffHunk(1) }),
 			defineCommand({
 				id: "diff.toggle-view",
 				title: `Diff View: ${diffRenderView === "split" ? "Unified" : "Split"}`,
 				scope: "Diff",
-				shortcut: "V",
+				shortcut: vimModeEnabled ? "s" : "V",
 				run: () => setDiffRenderView((current) => (current === "split" ? "unified" : "split")),
 			}),
 			defineCommand({
@@ -416,6 +468,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				scope: "Navigation",
 				shortcut: "f",
 				run: () => {
+					setVimInsertMode(false)
 					setChangedFilesModal({ ...initialChangedFilesModalState, selectedIndex: safeDiffFileIndex(displayFiles, diffFileIndex) })
 					setActiveModal("changedFiles")
 				},
@@ -425,6 +478,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				title: "Themes",
 				scope: "View",
 				run: () => {
+					setVimInsertMode(false)
 					openThemeModal()
 					setActiveModal("theme")
 				},
@@ -442,7 +496,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 			}),
 			defineCommand({ id: "yadv.quit", title: "Quit", scope: "System", shortcut: "q", run: () => renderer.destroy() }),
 		],
-		[diffFileIndex, diffRenderView, diffWhitespaceMode, diffWrapMode, displayFiles, openSelectedDiffComment, openThemeModal, refreshBranch, refreshDiff, refreshRepoName, renderer, toggleDiffCommentRange],
+		[diffFileIndex, diffRenderView, diffWhitespaceMode, diffWrapMode, displayFiles, moveDiffHunk, openSelectedDiffComment, openThemeModal, refreshBranch, refreshDiff, refreshRepoName, renderer, toggleDiffCommentRange, toggleVimMode, vimModeEnabled],
 	)
 	const filteredCommands = useMemo(() => sortCommandsByActiveScope(filterCommands(commands, commandPalette.query), "Diff"), [commandPalette.query, commands])
 	const selectedCommand = filteredCommands[clampCommandIndex(commandPalette.selectedIndex, filteredCommands)] ?? null
@@ -457,16 +511,16 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 
 	useKeyboard((key) => {
 		if (activeModal === "commandPalette") {
-			if (isSingleLineInputKey(key)) setCommandPalette((current) => ({ ...current, query: editSingleLineInput(current.query, key) ?? current.query, selectedIndex: 0 }))
+			if ((!vimModeEnabled || vimInsertMode) && isSingleLineInputKey(key)) setCommandPalette((current) => ({ ...current, query: editSingleLineInput(current.query, key) ?? current.query, selectedIndex: 0 }))
 			return
 		}
 		if (activeModal === "comment") return
 		if (activeModal === "changedFiles") {
-			if (isSingleLineInputKey(key)) setChangedFilesModal((current) => ({ ...current, query: editSingleLineInput(current.query, key) ?? current.query, selectedIndex: 0 }))
+			if ((!vimModeEnabled || vimInsertMode) && isSingleLineInputKey(key)) setChangedFilesModal((current) => ({ ...current, query: editSingleLineInput(current.query, key) ?? current.query, selectedIndex: 0 }))
 			return
 		}
 		if (activeModal === "theme" && themeModal.filterMode) {
-			if (isSingleLineInputKey(key)) editThemeQuery((query) => editSingleLineInput(query, key) ?? query)
+			if ((!vimModeEnabled || vimInsertMode) && isSingleLineInputKey(key)) editThemeQuery((query) => editSingleLineInput(query, key) ?? query)
 			return
 		}
 	})
@@ -479,8 +533,10 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 			commentThreadModalActive: activeModal === "commentThread",
 			themeModalActive: activeModal === "theme",
 			commandPaletteActive: activeModal === "commandPalette",
-			textInputActive: activeModal === "comment" || activeModal === "commandPalette" || activeModal === "changedFiles" || (activeModal === "theme" && themeModal.filterMode),
+			textInputActive: (!vimModeEnabled || vimInsertMode) && (activeModal === "comment" || activeModal === "commandPalette" || activeModal === "changedFiles" || (activeModal === "theme" && themeModal.filterMode)),
 			changedFilesModal: buildChangedFilesModalCtx({
+				vimModeEnabled,
+				vimInsertMode,
 				hasResults: changedFileResults.length > 0,
 				closeActiveModal,
 				selectChangedFile: () => {
@@ -492,16 +548,22 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				},
 				moveChangedFileSelection: (delta) =>
 					setChangedFilesModal((current) => ({ ...current, selectedIndex: wrapIndex(current.selectedIndex + delta, Math.max(1, changedFileResults.length)) })),
+				enterVimInsertMode,
+				leaveVimInsertMode,
 			}),
-			themeModal: buildThemeModalCtx({ themeModal, closeThemeModal, updateThemeQuery, toggleThemeMode, toggleThemeTone, moveThemeSelection }),
+			themeModal: buildThemeModalCtx({ vimModeEnabled, vimInsertMode, themeModal, closeThemeModal, updateThemeQuery, toggleThemeMode, toggleThemeTone, moveThemeSelection, enterVimInsertMode, leaveVimInsertMode }),
 			commandPalette: buildCommandPaletteCtx({
+				vimModeEnabled,
+				vimInsertMode,
 				closeActiveModal,
 				selectedCommand,
 				runCommandPaletteCommand: runCommand,
 				moveCommandPaletteSelection: (delta) =>
 					setCommandPalette((current) => ({ ...current, selectedIndex: wrapIndex(current.selectedIndex + delta, Math.max(1, filteredCommands.length)) })),
+				enterVimInsertMode,
+				leaveVimInsertMode,
 			}),
-			commentModal: { closeModal: closeActiveModal },
+			commentModal: { vimModeEnabled, vimInsertMode, closeModal: closeActiveModal, submitComment: submitCommentModal, enterInsertMode: enterVimInsertMode },
 			commentThreadModal: {
 				halfPage: Math.max(1, Math.floor(height / 2)),
 				closeModal: closeActiveModal,
@@ -509,6 +571,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				scrollBy: (delta) => setCommentThreadModal((current) => ({ ...current, scrollOffset: Math.max(0, current.scrollOffset + delta) })),
 			},
 			diff: {
+				vimModeEnabled,
 				halfPage: Math.max(1, Math.floor(height / 2)),
 				handleEscape: () => {
 					if (diffCommentRangeStartIndex !== null) setDiffCommentRangeStartIndex(null)
@@ -532,13 +595,17 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				alignAnchor: alignSelectedDiffCommentAnchor,
 				selectSide: selectDiffCommentSide,
 				openChangedFiles: () => {
+					setVimInsertMode(false)
 					setChangedFilesModal({ ...initialChangedFilesModalState, selectedIndex: safeDiffFileIndex(displayFiles, diffFileIndex) })
 					setActiveModal("changedFiles")
 				},
 				nextFile: () => selectDiffFile(diffFileIndex + 1),
 				previousFile: () => selectDiffFile(diffFileIndex - 1),
+				nextHunk: () => moveDiffHunk(1),
+				previousHunk: () => moveDiffHunk(-1),
 			},
 			openCommandPalette: () => {
+				setVimInsertMode(false)
 				setCommandPalette(initialCommandPaletteState)
 				setActiveModal("commandPalette")
 			},
@@ -575,9 +642,11 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				{activeModal === "changedFiles" ? (
 					<ChangedFilesModal
 						state={changedFilesModal}
-						results={changedFileResults}
-						totalCount={displayFiles.length}
-						modalWidth={modalWidth}
+					results={changedFileResults}
+					totalCount={displayFiles.length}
+					vimModeEnabled={vimModeEnabled}
+					vimInsertMode={vimInsertMode}
+					modalWidth={modalWidth}
 						modalHeight={modalHeight}
 						offsetLeft={modalOffsetLeft}
 						offsetTop={modalOffsetTop}
@@ -585,10 +654,12 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				) : null}
 				{activeModal === "commandPalette" ? (
 					<CommandPalette
-						commands={filteredCommands}
-						query={commandPalette.query}
-						selectedIndex={commandPalette.selectedIndex}
-						modalWidth={modalWidth}
+					commands={filteredCommands}
+					query={commandPalette.query}
+					selectedIndex={commandPalette.selectedIndex}
+					vimModeEnabled={vimModeEnabled}
+					vimInsertMode={vimInsertMode}
+					modalWidth={modalWidth}
 						modalHeight={modalHeight}
 						offsetLeft={modalOffsetLeft}
 						offsetTop={modalOffsetTop}
@@ -597,12 +668,12 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 					/>
 				) : null}
 				{activeModal === "theme" ? (
-					<ThemeModal state={themeModal} modalWidth={modalWidth} modalHeight={modalHeight} offsetLeft={modalOffsetLeft} offsetTop={modalOffsetTop} />
+					<ThemeModal state={themeModal} vimModeEnabled={vimModeEnabled} vimInsertMode={vimInsertMode} modalWidth={modalWidth} modalHeight={modalHeight} offsetLeft={modalOffsetLeft} offsetTop={modalOffsetTop} />
 				) : null}
-				{activeModal === "comment" ? <CommentModal state={commentModal} anchorLabel={selectedDiffCommentAnchor ? `${selectedDiffCommentAnchor.path} ${selectedDiffCommentLabel ?? ""}`.trim() : "No diff line selected"} modalWidth={modalWidth} modalHeight={modalHeight} offsetLeft={modalOffsetLeft} offsetTop={modalOffsetTop} onChange={setCommentEditorValue} onSubmit={submitCommentModal} /> : null}
+				{activeModal === "comment" ? <CommentModal state={commentModal} anchorLabel={selectedDiffCommentAnchor ? `${selectedDiffCommentAnchor.path} ${selectedDiffCommentLabel ?? ""}`.trim() : "No diff line selected"} modalWidth={modalWidth} modalHeight={modalHeight} offsetLeft={modalOffsetLeft} offsetTop={modalOffsetTop} vimModeEnabled={vimModeEnabled} vimInsertMode={vimInsertMode} onChange={setCommentEditorValue} onSubmit={submitCommentModal} /> : null}
 				{activeModal === "commentThread" ? <CommentThreadModal state={commentThreadModal} anchorLabel={selectedDiffCommentAnchor ? `${selectedDiffCommentAnchor.path} ${selectedDiffCommentLabel ?? ""}`.trim() : "Selected thread"} comments={selectedDiffCommentThread} modalWidth={modalWidth} modalHeight={Math.min(height - 4, 22)} offsetLeft={modalOffsetLeft} offsetTop={Math.max(0, centeredOffset(height, Math.min(height - 4, 22)))} /> : null}
 			</box>
-			<PlainLine text={centerCell(notice ?? "enter comment   v range   f files   V view   w wrap   W whitespace   r reload   ctrl-p commands   q quit", width)} fg={notice ? colors.text : colors.muted} />
+			<PlainLine text={centerCell(notice ?? (vimModeEnabled ? "vim on   i comment   V range   s view   { } hunks   f files   w wrap   W whitespace   ctrl-p commands   q quit" : "enter comment   v range   f files   V view   w wrap   W whitespace   r reload   ctrl-p commands   q quit"), width)} fg={notice ? colors.text : colors.muted} />
 		</box>
 	)
 }

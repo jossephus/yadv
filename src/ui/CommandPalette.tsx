@@ -67,6 +67,8 @@ export const CommandPalette = ({
 	commands,
 	query,
 	selectedIndex,
+	vimModeEnabled,
+	vimInsertMode,
 	modalWidth,
 	modalHeight,
 	offsetLeft,
@@ -77,6 +79,8 @@ export const CommandPalette = ({
 	commands: readonly AppCommand[]
 	query: string
 	selectedIndex: number
+	vimModeEnabled: boolean
+	vimInsertMode: boolean
 	modalWidth: number
 	modalHeight: number
 	offsetLeft: number
@@ -180,8 +184,9 @@ export const CommandPalette = ({
 				<HintRow
 					items={[
 						{ key: "↑↓", label: "select" },
+						...(vimModeEnabled ? [{ key: "i", label: vimInsertMode ? "typing" : "insert" }, { key: "esc", label: vimInsertMode ? "normal" : "close" }] : []),
 						{ key: "enter", label: "run" },
-						{ key: "esc", label: "close" },
+						...(vimModeEnabled ? [] : [{ key: "esc", label: "close" }]),
 					]}
 				/>
 			}
