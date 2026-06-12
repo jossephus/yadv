@@ -18,7 +18,7 @@ export class GitService extends Context.Service<
 		readonly currentBranch: () => Effect.Effect<string, CommandError>
 		readonly workingTreeDiff: () => Effect.Effect<string, CommandError>
 	}
->()("ghui/GitService") {
+>()("yadv/GitService") {
 	static readonly layerNoDeps = Layer.effect(
 		GitService,
 		Effect.gen(function* () {

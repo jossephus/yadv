@@ -440,7 +440,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 					refreshBranch()
 				},
 			}),
-			defineCommand({ id: "app.quit", title: "Quit", scope: "System", shortcut: "q", run: () => renderer.destroy() }),
+			defineCommand({ id: "yadv.quit", title: "Quit", scope: "System", shortcut: "q", run: () => renderer.destroy() }),
 		],
 		[diffFileIndex, diffRenderView, diffWhitespaceMode, diffWrapMode, displayFiles, openSelectedDiffComment, openThemeModal, refreshBranch, refreshDiff, refreshRepoName, renderer, toggleDiffCommentRange],
 	)

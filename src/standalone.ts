@@ -1,14 +1,14 @@
 import packageJson from "../package.json" with { type: "json" }
 
-const help = `ghui ${packageJson.version}
+const help = `yadv ${packageJson.version}
 
-Terminal UI for GitHub pull requests.
+Yet another local diff viewer for git working trees.
 
 Usage:
-  ghui              Start the TUI
-  ghui -v, --version
+  yadv              Start the TUI
+  yadv -v, --version
                     Print the installed version
-  ghui -h, --help   Show this help message
+  yadv -h, --help   Show this help message
 `
 
 const args = Bun.argv.slice(2)
@@ -39,7 +39,7 @@ if (command === "-v" || command === "--version" || command === "version") {
 }
 
 if (command === "upgrade") {
-	console.error("Use your package manager to upgrade ghui, for example `brew upgrade ghui`.")
+	console.error("Use your package manager to upgrade yadv, for example `brew upgrade yadv`.")
 	process.exit(1)
 }
 
@@ -47,8 +47,8 @@ if (typeof command === "string") {
 	const unknownCommand = command
 	const suggestion = commands.find((name) => editDistance(unknownCommand, name) <= 2)
 	console.error(`Unknown command: ${unknownCommand}`)
-	if (suggestion) console.error(`Did you mean: ghui ${suggestion}?`)
-	console.error("Run `ghui --help` for usage.")
+	if (suggestion) console.error(`Did you mean: yadv ${suggestion}?`)
+	console.error("Run `yadv --help` for usage.")
 	process.exit(1)
 }
 

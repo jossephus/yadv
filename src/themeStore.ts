@@ -16,10 +16,10 @@ interface StoredConfig {
 }
 
 const configDirectory = () => {
-	if (process.env.GHUI_CONFIG_DIR) return process.env.GHUI_CONFIG_DIR
-	if (process.env.XDG_CONFIG_HOME) return join(process.env.XDG_CONFIG_HOME, "ghui")
-	if (process.platform === "win32" && process.env.APPDATA) return join(process.env.APPDATA, "ghui")
-	return join(homedir(), ".config", "ghui")
+	if (process.env.YADV_CONFIG_DIR) return process.env.YADV_CONFIG_DIR
+	if (process.env.XDG_CONFIG_HOME) return join(process.env.XDG_CONFIG_HOME, "yadv")
+	if (process.platform === "win32" && process.env.APPDATA) return join(process.env.APPDATA, "yadv")
+	return join(homedir(), ".config", "yadv")
 }
 
 export const configPath = () => join(configDirectory(), "config.json")

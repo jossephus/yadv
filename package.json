@@ -1,20 +1,21 @@
 {
 	"name": "yadv",
 	"version": "0.7.1",
-	"description": "Yet another diff viewer",
+	"description": "Yet another local diff viewer for git working trees",
 	"type": "module",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kitlangton/ghui.git"
+		"url": "git+https://github.com/jossephus/yadv.git"
 	},
 	"bugs": {
-		"url": "https://github.com/kitlangton/ghui/issues"
+		"url": "https://github.com/jossephus/yadv/issues"
 	},
-	"homepage": "https://github.com/kitlangton/ghui#readme",
+	"homepage": "https://github.com/jossephus/yadv#readme",
 	"keywords": [
-		"github",
-		"pull-requests",
+		"diff",
+		"git",
+		"local",
 		"terminal",
 		"tui",
 		"bun"
@@ -41,7 +42,7 @@
 		"changeset": "npm exec --package @changesets/cli@2.31.0 -- changeset",
 		"changeset:status": "npm exec --package @changesets/cli@2.31.0 -- changeset status",
 		"changeset:version": "npm exec --package @changesets/cli@2.31.0 -- changeset version",
-		"dev": "GHUI_FORCE_FULL_REPAINT_ON_START=1 bun --watch src/index.tsx",
+		"dev": "YADV_FORCE_FULL_REPAINT_ON_START=1 bun --watch src/index.tsx",
 		"start": "bun run src/index.tsx",
 		"test": "bun test test",
 		"typecheck": "tsc --noEmit",
@@ -58,7 +59,6 @@
 	],
 	"dependencies": {
 		"@effect/atom-react": "4.0.0-beta.59",
-		"@effect/sql-sqlite-bun": "4.0.0-beta.59",
 		"@opentui/core": "0.2.1",
 		"@opentui/react": "0.2.1",
 		"effect": "4.0.0-beta.59",

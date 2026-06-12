@@ -21,4 +21,4 @@ coverage/
 .vscode/
 
 # local mock snapshots
-.ghui/
+.yadv/

@@ -42,20 +42,20 @@ const valueAfter = (args: readonly string[], flag: string, prefix: string) => {
 	return null
 }
 
-const firstRestApiPath = (args: readonly string[]) => args.find((arg) => /^[a-z0-9_.-]+\//i.test(arg) || arg.startsWith("user")) ?? null
+const firstApiPath = (args: readonly string[]) => args.find((arg) => /^[a-z0-9_.-]+\//i.test(arg) || arg.startsWith("user")) ?? null
 
 export const commandTelemetryAttributes = (command: string, args: readonly string[]) => {
-	const githubKind = command !== "gh" ? "none" : args[0] === "api" && args[1] === "graphql" ? "graphql" : args[0] === "api" ? "rest" : (args[0] ?? "unknown")
+	const cliKind = command !== "gh" ? "none" : args[0] === "api" && args[1] === "graphql" ? "graphql" : args[0] === "api" ? "rest" : (args[0] ?? "unknown")
 	const first = valueAfter(args, "-F", "first=")
 	const limit = valueAfter(args, "--limit", "")
 	return {
 		"process.command": command,
 		"process.argv.count": args.length,
-		"github.command.kind": githubKind,
-		"github.graphql.has_cursor": args.some((arg) => arg.startsWith("after=")),
-		...(first ? { "github.page_size": Number.parseInt(first, 10) } : {}),
-		...(limit ? { "github.limit": Number.parseInt(limit, 10) } : {}),
-		...(githubKind === "rest" ? { "github.rest.path": firstRestApiPath(args) ?? "unknown" } : {}),
+		"cli.command.kind": cliKind,
+		"cli.graphql.has_cursor": args.some((arg) => arg.startsWith("after=")),
+		...(first ? { "cli.page_size": Number.parseInt(first, 10) } : {}),
+		...(limit ? { "cli.limit": Number.parseInt(limit, 10) } : {}),
+		...(cliKind === "rest" ? { "cli.rest.path": firstApiPath(args) ?? "unknown" } : {}),
 	}
 }
 
@@ -69,7 +69,7 @@ export class CommandRunner extends Context.Service<
 			args: readonly string[],
 		) => Effect.Effect<S["Type"], CommandError | JsonParseError | Schema.SchemaError, S["DecodingServices"]>
 	}
->()("ghui/CommandRunner") {
+>()("yadv/CommandRunner") {
 	static readonly layer = Layer.effect(
 		CommandRunner,
 		Effect.gen(function* () {
@@ -136,7 +136,7 @@ export class CommandRunner extends Context.Service<
 							"process.exit_code": result.exitCode,
 						}),
 					),
-					Effect.withSpan("ghui.command.runProcess", {
+					Effect.withSpan("yadv.command.runProcess", {
 						attributes,
 					}),
 				)

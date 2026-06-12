@@ -31,13 +31,13 @@ export const appKeymap = App(
 	{ id: "command.open", title: "Open command palette", keys: ["ctrl+p", "meta+k"], run: (s) => s.openCommandPalette() },
 	{ id: "command.open-help", title: "Open command palette", keys: ["?"], when: (s) => !s.textInputActive, run: (s) => s.openCommandPalette() },
 	{
-		id: "app.quit-or-close",
+		id: "yadv.quit-or-close",
 		title: "Quit / close modal",
 		keys: ["ctrl+c"],
 		run: (s) => s.handleQuitOrClose(),
 	},
 	{
-		id: "app.quit-or-close-q",
+		id: "yadv.quit-or-close-q",
 		title: "Quit / close modal",
 		keys: ["q"],
 		when: (s) => !s.textInputActive,

@@ -6,7 +6,6 @@
       "name": "ghui",
       "dependencies": {
         "@effect/atom-react": "4.0.0-beta.59",
-        "@effect/sql-sqlite-bun": "4.0.0-beta.59",
         "@opentui/core": "0.2.1",
         "@opentui/react": "0.2.1",
         "effect": "4.0.0-beta.59",
@@ -15,16 +14,16 @@
       },
       "devDependencies": {
         "@effect/language-service": "0.85.1",
-        "@ghui/keymap": "workspace:*",
         "@types/bun": "1.3.12",
         "@types/react": "19.2.14",
+        "@yadv/keymap": "workspace:*",
         "oxfmt": "0.47.0",
         "oxlint": "1.62.0",
         "typescript": "6.0.2",
       },
     },
     "packages/keymap": {
-      "name": "@ghui/keymap",
+      "name": "@yadv/keymap",
       "version": "0.0.0",
       "peerDependencies": {
         "react": "*",
@@ -35,10 +34,6 @@
     "@effect/atom-react": ["@effect/atom-react@4.0.0-beta.59", "", { "peerDependencies": { "effect": "^4.0.0-beta.59", "react": "^19.2.4", "scheduler": "*" } }, "sha512-VkznQz5c+Z/BLxX+hQNPzPOyUnLQjnbppFSNP7tbPru7HKR4ihzCDC6Xjbx87156MOrZ+JOa6shTMbmvGT5W0w=="],
 
     "@effect/language-service": ["@effect/language-service@0.85.1", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-EXnJjIy6zQ3nUO/MZ+ynWUb8B895KZPotd1++oTs9JjDkplwM7cb6zo8Zq2zU6piwq+KflO7amXbEfj1UMpHkw=="],
-
-    "@effect/sql-sqlite-bun": ["@effect/sql-sqlite-bun@4.0.0-beta.59", "", { "peerDependencies": { "effect": "^4.0.0-beta.59" } }, "sha512-qZWt2HeLgSY8ygEfwbldK9lJ5xg/WP4lgCp1VLlyE8BImSB5g1h+UbhitXr+pOIf+ry4Xmc4ycp7YwTBOFH5/A=="],
-
-    "@ghui/keymap": ["@ghui/keymap@workspace:packages/keymap"],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3", "", { "os": "darwin", "cpu": "arm64" }, "sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw=="],
 
@@ -151,6 +146,8 @@
     "@types/node": ["@types/node@16.9.1", "", {}, "sha512-QpLcX9ZSsq3YYUUnD3nFDY8H7wctAhQj/TFKL8Ya8v5fMm3CFXxo8zStsLAl780ltoYoo1WvKUVGBQK+1ifr7g=="],
 
     "@types/react": ["@types/react@19.2.14", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w=="],
+
+    "@yadv/keymap": ["@yadv/keymap@workspace:packages/keymap"],
 
     "ansi-regex": ["ansi-regex@6.2.2", "", {}, "sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg=="],
 

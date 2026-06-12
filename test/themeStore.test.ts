@@ -5,14 +5,14 @@ import { join } from "node:path"
 import { Effect } from "effect"
 import { loadStoredSystemThemeAutoReload } from "../src/themeStore.js"
 
-const originalConfigDir = process.env.GHUI_CONFIG_DIR
+const originalConfigDir = process.env.YADV_CONFIG_DIR
 const tempDirs: string[] = []
 
 const restoreConfigDir = () => {
 	if (originalConfigDir === undefined) {
-		delete process.env.GHUI_CONFIG_DIR
+		delete process.env.YADV_CONFIG_DIR
 	} else {
-		process.env.GHUI_CONFIG_DIR = originalConfigDir
+		process.env.YADV_CONFIG_DIR = originalConfigDir
 	}
 }
 
@@ -23,9 +23,9 @@ afterEach(async () => {
 })
 
 const useTempConfig = async (content?: string) => {
-	const dir = await mkdtemp(join(tmpdir(), "ghui-theme-store-"))
+	const dir = await mkdtemp(join(tmpdir(), "yadv-theme-store-"))
 	tempDirs.push(dir)
-	process.env.GHUI_CONFIG_DIR = dir
+	process.env.YADV_CONFIG_DIR = dir
 	if (content !== undefined) await writeFile(join(dir, "config.json"), content)
 }
 

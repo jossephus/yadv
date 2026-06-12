@@ -9,7 +9,7 @@ class LocalCommentsError extends Schema.TaggedErrorClass<LocalCommentsError>()("
 	message: Schema.String,
 }) {}
 
-const commentsFileName = "ghui.json"
+const commentsFileName = "yadv.json"
 
 const parseCommentsFile = (value: unknown): LocalCommentsFile => {
 	if (!value || typeof value !== "object") return initialLocalCommentsFile
@@ -66,7 +66,7 @@ export class LocalCommentsService extends Context.Service<
 		readonly listComments: () => Effect.Effect<readonly LocalDiffComment[], LocalCommentsError>
 		readonly appendComment: (input: CreateLocalDiffCommentInput) => Effect.Effect<LocalDiffComment, LocalCommentsError>
 	}
->()("ghui/LocalCommentsService") {
+>()("yadv/LocalCommentsService") {
 	static readonly layerNoDeps = Layer.effect(
 		LocalCommentsService,
 		Effect.gen(function* () {

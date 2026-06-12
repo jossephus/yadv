@@ -44,7 +44,7 @@ export type ReviewStatus = (typeof reviewStatuses)[number]
 
 export type Mergeable = "mergeable" | "conflicting" | "unknown"
 
-// DiffCommentSide is the only literal type still consumed at runtime — GitHubService
+// DiffCommentSide is the only literal type still consumed at runtime.
 // uses it as a Schema inside PullRequestCommentSchema.
 export const DiffCommentSide = Schema.Literals(["LEFT", "RIGHT"])
 export type DiffCommentSide = Schema.Schema.Type<typeof DiffCommentSide>

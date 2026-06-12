@@ -103,7 +103,7 @@ process.on("SIGUSR2", () => {
 
 const Bootstrap = () => {
 	const [appBundle, setAppBundle] = useState<AppBundle | null>(null)
-	const [bootHint, setBootHint] = useState("Starting ghui")
+	const [bootHint, setBootHint] = useState("Starting yadv")
 	const [systemThemeGeneration, setSystemThemeGeneration] = useState(0)
 
 	useEffect(() => {
@@ -113,11 +113,11 @@ const Bootstrap = () => {
 			setBootHint("Registering syntax parsers")
 			addGhUiParsers()
 
-			setBootHint("Loading ghui app")
+			setBootHint("Loading yadv")
 			void Promise.all([import("@effect/atom-react"), import("./App.js")]).then(
 				([{ RegistryProvider }, { App }]) => {
 					if (cancelled) return
-					setBootHint("Mounting ghui app")
+					setBootHint("Mounting yadv")
 					setAppBundle({ RegistryProvider, App })
 				},
 				(error) => {
