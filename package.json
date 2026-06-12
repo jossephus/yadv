@@ -1,7 +1,7 @@
 {
-	"name": "@kitlangton/ghui",
+	"name": "yadv",
 	"version": "0.7.1",
-	"description": "Terminal UI for GitHub pull requests",
+	"description": "Yet another diff viewer",
 	"type": "module",
 	"license": "MIT",
 	"repository": {
@@ -32,7 +32,7 @@
 		"registry": "https://registry.npmjs.org/"
 	},
 	"bin": {
-		"ghui": "bin/ghui.js"
+		"yadv": "bin/yadv.js"
 	},
 	"scripts": {
 		"build:cli": "bun run dev/build-cli.ts",
@@ -41,15 +41,14 @@
 		"changeset": "npm exec --package @changesets/cli@2.31.0 -- changeset",
 		"changeset:status": "npm exec --package @changesets/cli@2.31.0 -- changeset status",
 		"changeset:version": "npm exec --package @changesets/cli@2.31.0 -- changeset version",
-		"dev": "GHUI_FORCE_FULL_REPAINT_ON_START=1 GHUI_MOTEL_PORT=${GHUI_MOTEL_PORT:-27686} bun --watch src/index.tsx",
-		"dev:mock": "GHUI_FORCE_FULL_REPAINT_ON_START=1 GHUI_MOCK_PR_COUNT=200 GHUI_MOCK_REPO_COUNT=4 bun --watch src/index.tsx",
+		"dev": "GHUI_FORCE_FULL_REPAINT_ON_START=1 bun --watch src/index.tsx",
 		"start": "bun run src/index.tsx",
 		"test": "bun test test",
 		"typecheck": "tsc --noEmit",
 		"lint": "oxlint --tsconfig tsconfig.json src/ test/",
 		"format": "oxfmt src/ test/ dev/",
 		"format:check": "oxfmt --check src/ test/ dev/",
-		"package:smoke": "bun run dev/package-smoke.ts",
+		"package:smoke": "bun run build:cli && node bin/yadv.js --version",
 		"prepublishOnly": "printf '%s\n' 'Publish dist/npm/main, not the source checkout.' && exit 1",
 		"prepack": "bun run build:cli"
 	},

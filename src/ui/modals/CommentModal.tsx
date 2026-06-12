@@ -1,7 +1,7 @@
 import type { TextareaOptions, TextareaRenderable } from "@opentui/core"
 import { useEffect, useRef } from "react"
 import { colors } from "../colors.js"
-import { fitCell, HintRow, PlainLine, standardModalDims, StandardModal } from "../primitives.js"
+import { fitCell, HintRow, PlainLine, StandardModal, standardModalDims } from "../primitives.js"
 import type { CommentModalState } from "./types.js"
 
 const commentTextareaKeyBindings: TextareaOptions["keyBindings"] = [
@@ -12,30 +12,12 @@ const commentTextareaKeyBindings: TextareaOptions["keyBindings"] = [
 
 const commentModalEditorKey = (state: CommentModalState) => {
 	const target = state.target
-	if (target.kind === "edit") return `edit:${target.commentId}:${state.body.length}`
-	if (target.kind === "reply") return `reply:${target.inReplyTo}:${state.body.length}`
-	return `${target.kind}:${state.body.length}`
+	if (target.kind === "edit") return `edit:${target.commentId}`
+	if (target.kind === "reply") return `reply:${target.inReplyTo}`
+	return target.kind
 }
 
-export const CommentModal = ({
-	state,
-	anchorLabel,
-	modalWidth,
-	modalHeight,
-	offsetLeft,
-	offsetTop,
-	onChange,
-	onSubmit,
-}: {
-	state: CommentModalState
-	anchorLabel: string
-	modalWidth: number
-	modalHeight: number
-	offsetLeft: number
-	offsetTop: number
-	onChange: (body: string, cursor: number) => void
-	onSubmit: () => void
-}) => {
+export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offsetLeft, offsetTop, onChange, onSubmit }: { state: CommentModalState; anchorLabel: string; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number; onChange: (body: string, cursor: number) => void; onSubmit: () => void }) => {
 	const textareaRef = useRef<TextareaRenderable | null>(null)
 	const { contentWidth, bodyHeight } = standardModalDims(modalWidth, modalHeight)
 	const title = state.target.kind === "edit" ? "Edit comment" : "Comment"
@@ -63,15 +45,7 @@ export const CommentModal = ({
 			headerRight={{ text: "enter save" }}
 			subtitle={<PlainLine text={fitCell(anchorLabel, contentWidth)} fg={colors.muted} />}
 			bodyPadding={1}
-			footer={
-				<HintRow
-					items={[
-						{ key: "enter", label: "save" },
-						{ key: "shift-enter", label: "newline" },
-						{ key: "esc", label: "cancel" },
-					]}
-				/>
-			}
+			footer={<HintRow items={[{ key: "enter", label: "save" }, { key: "shift-enter", label: "newline" }, { key: "esc", label: "cancel" }]} />}
 		>
 			{state.error ? <PlainLine text={fitCell(state.error, contentWidth)} fg={colors.error} /> : null}
 			<textarea

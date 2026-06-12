@@ -1,16 +1,4 @@
-import type { PullRequestLabel, PullRequestMergeInfo, PullRequestMergeMethod, PullRequestReviewComment, PullRequestReviewEvent, RepositoryMergeMethods } from "../../domain.js"
-import { allowedMergeMethodList } from "../../domain.js"
-import { colors } from "../colors.js"
-import { commentDisplayRows, type CommentDisplayLine } from "../comments.js"
 import type { DiffFilePatch } from "../diff.js"
-import { TokenLine, type Token } from "../primitives.js"
-import { shortRepoName } from "../pullRequests.js"
-
-export const filterLabels = (labels: readonly PullRequestLabel[], query: string): readonly PullRequestLabel[] => {
-	const normalized = query.trim().toLowerCase()
-	if (normalized.length === 0) return labels
-	return labels.filter((label) => label.name.toLowerCase().includes(normalized))
-}
 
 export interface ChangedFileSearchResult {
 	readonly file: DiffFilePatch
@@ -45,13 +33,7 @@ const pathSegments = (path: string): readonly PathSegment[] => {
 	const parts = path.split("/")
 	let start = 0
 	return parts.map((part, index) => {
-		const segment = {
-			text: part,
-			lower: part.toLowerCase(),
-			start,
-			index,
-			isBasename: index === parts.length - 1,
-		}
+		const segment = { text: part, lower: part.toLowerCase(), start, index, isBasename: index === parts.length - 1 }
 		start += part.length + 1
 		return segment
 	})
@@ -101,9 +83,7 @@ const tokenMatchInSegment = (segment: PathSegment, token: string): FileTokenMatc
 		const score = scoreSegmentMatch(segment, token, localIndexes, contiguous)
 		const start = segment.start + (localIndexes[0] ?? 0)
 		const indexes = localIndexes.map((index) => segment.start + index)
-		if (!best || score > best.score || (score === best.score && start < best.start)) {
-			best = { score, indexes, start }
-		}
+		if (!best || score > best.score || (score === best.score && start < best.start)) best = { score, indexes, start }
 	}
 
 	let substringStart = segment.lower.indexOf(token)
@@ -129,9 +109,7 @@ const tokenMatchInPath = (segments: readonly PathSegment[], token: string): File
 	for (const segment of segments) {
 		const match = tokenMatchInSegment(segment, token)
 		if (!match) continue
-		if (!best || match.score > best.score || (match.score === best.score && match.start < best.start)) {
-			best = match
-		}
+		if (!best || match.score > best.score || (match.score === best.score && match.start < best.start)) best = match
 	}
 	return best
 }
@@ -164,75 +142,6 @@ export const filterChangedFiles = (files: readonly DiffFilePatch[], query: strin
 		const match = fuzzyPathMatch(file.name, query)
 		if (match) results.push({ file, index, matchIndexes: match.matchIndexes, score: match.score })
 	}
-	if (hasQuery) {
-		results.sort((left, right) => {
-			return right.score - left.score || left.index - right.index
-		})
-	}
+	if (hasQuery) results.sort((left, right) => right.score - left.score || left.index - right.index)
 	return results
 }
-
-export interface SubmitReviewOption {
-	readonly event: PullRequestReviewEvent
-	readonly title: string
-	readonly description: string
-}
-
-export const submitReviewOptions: readonly SubmitReviewOption[] = [
-	{ event: "COMMENT", title: "Comment", description: "Submit a general review without changing status" },
-	{ event: "APPROVE", title: "Approve", description: "Approve this pull request" },
-	{ event: "REQUEST_CHANGES", title: "Request changes", description: "Block merge until follow-up changes are made" },
-]
-
-const submitReviewEventColors = {
-	COMMENT: colors.status.review,
-	APPROVE: colors.status.passing,
-	REQUEST_CHANGES: colors.status.failing,
-} satisfies Record<PullRequestReviewEvent, string>
-
-export const submitReviewEventColor = (event: PullRequestReviewEvent): string => submitReviewEventColors[event]
-
-export const mergeUnavailableReason = (info: PullRequestMergeInfo | null): string => {
-	if (!info) return "Loading merge status from GitHub."
-	if (info.state !== "open") return "This pull request is not open."
-	// Check the real blockers first; draft alone is recoverable via mark-ready, so
-	// it's only the message of last resort.
-	if (info.mergeable === "conflicting") return "This branch has merge conflicts."
-	if (info.checkStatus === "failing") return "Required checks are failing."
-	if (info.checkStatus === "pending") return "Required checks are still running."
-	if (info.reviewStatus === "changes") return "Reviewer has requested changes."
-	if (info.reviewStatus === "review") return "Awaiting required review."
-	if (info.isDraft) return "Draft pull requests cannot be merged."
-	return "No merge actions are currently available."
-}
-
-export const MethodStripLine = ({ allowed, selected }: { allowed: RepositoryMergeMethods; selected: PullRequestMergeMethod }) => {
-	const tokens: Token[] = allowedMergeMethodList(allowed).map((method) =>
-		method === selected ? { text: ` ${method} `, fg: colors.selectedText, bg: colors.selectedBg, bold: true } : { text: ` ${method} `, fg: colors.muted },
-	)
-	return <TokenLine tokens={tokens} separator="" />
-}
-
-const CHECK_STATUS_FG = {
-	failing: colors.status.failing,
-	pending: colors.status.pending,
-	passing: colors.status.passing,
-	none: colors.muted,
-} as const satisfies Record<PullRequestMergeInfo["checkStatus"], string>
-
-export const buildStatusBadges = (info: PullRequestMergeInfo | null, repo: string | null): readonly Token[] => {
-	if (info) {
-		const tokens: Token[] = [{ text: shortRepoName(info.repository), fg: colors.muted }]
-		if (info.mergeable === "conflicting") tokens.push({ text: "conflicting", fg: colors.error })
-		if (info.isDraft) tokens.push({ text: "draft", fg: colors.status.draft })
-		if (info.reviewStatus === "changes") tokens.push({ text: "changes requested", fg: colors.status.changes })
-		if (info.reviewStatus === "review") tokens.push({ text: "review pending", fg: colors.status.review })
-		if (info.reviewStatus === "approved" && !info.isDraft) tokens.push({ text: "approved", fg: colors.status.approved })
-		if (info.checkStatus !== "none") tokens.push({ text: `checks ${info.checkSummary ?? info.checkStatus}`, fg: CHECK_STATUS_FG[info.checkStatus] })
-		return tokens
-	}
-	return repo ? [{ text: shortRepoName(repo), fg: colors.muted }] : []
-}
-
-export const commentThreadRows = (comments: readonly PullRequestReviewComment[], width: number): readonly CommentDisplayLine[] =>
-	comments.flatMap((comment) => commentDisplayRows({ item: comment, width }))

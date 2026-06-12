@@ -1,90 +1,6 @@
-# ghui
+# yadv
 
-Terminal UI for keeping up with your open GitHub pull requests across repositories.
-
-`ghui` gives you one keyboard-driven place to review PR details, inspect diffs, leave diff comments, manage labels, toggle draft state, merge, open PRs in GitHub, and copy PR metadata without leaving the terminal.
-
-<img width="1420" height="856" alt="image" src="https://github.com/user-attachments/assets/5e560a4a-5887-4baa-a6d4-e1f4f0410c70" />
-
-## Install
-
-Homebrew is the recommended install path on macOS and Linux. It installs a standalone `ghui` binary, so you do not need Bun or npm at runtime.
-
-```bash
-brew install kitlangton/tap/ghui
-```
-
-Upgrade with:
-
-```bash
-brew upgrade ghui
-```
-
-Or install with npm:
-
-```bash
-npm install -g @kitlangton/ghui
-```
-
-The npm package also installs a platform-specific binary package and does not require Bun.
-
-Requirements:
-
-- GitHub CLI installed and authenticated with `gh auth login`
-
-Run it from anywhere:
-
-```bash
-ghui
-```
-
-## Local Development
-
-Clone, install, and link:
-
-```bash
-git clone https://github.com/kitlangton/ghui.git
-cd ghui
-bun install
-bun link
-```
-
-With Nix flakes:
-
-```bash
-nix develop
-bun install
-bun run dev
-```
-
-## Configuration
-
-- `GHUI_PR_FETCH_LIMIT`: max PRs fetched, defaults to `200`
-
-Example:
-
-```bash
-GHUI_PR_FETCH_LIMIT=100 ghui
-```
-
-You can also copy `.env.example` to `.env` and edit the values locally.
-
-ghui stores UI preferences in `config.json` under `GHUI_CONFIG_DIR` when set,
-otherwise under the platform config directory. On Linux this is normally
-`~/.config/ghui/config.json`.
-
-Example:
-
-```json
-{
-	"theme": "system",
-	"systemThemeAutoReload": true
-}
-```
-
-`systemThemeAutoReload` defaults to `false`. Set it to `true` to let external
-theme reload signals update the active system theme palette while ghui is
-running.
+Yet Another Local Diff Viewer, a fork of [ghui](https://github.com/kitlangton/ghui) for local diffs. because ghui is soo nice to work with.
 
 ## Keybindings
 
@@ -123,3 +39,7 @@ Review submission:
 - Press `enter` to move to the optional summary area.
 - Press `enter` again to submit, or `shift-enter` to insert a newline.
 - Press `esc` from the summary to return to action selection; press `esc` from action selection to cancel.
+
+## Credits
+
+- Forked from [ghui](https://github.com/kitlangton/ghui) by Kit Langton.

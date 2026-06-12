@@ -15,10 +15,5 @@ export const commentThreadModalKeymap = Thread(
 	{ id: "comment-thread.up", title: "Up", keys: ["k", "up"], run: (s) => s.scrollBy(-1) },
 	{ id: "comment-thread.down", title: "Down", keys: ["j", "down"], run: (s) => s.scrollBy(1) },
 	{ id: "comment-thread.half-up", title: "Half page up", keys: ["pageup", "ctrl+u"], run: (s) => s.scrollBy(-s.halfPage) },
-	{
-		id: "comment-thread.half-down",
-		title: "Half page down",
-		keys: ["pagedown", "ctrl+d", "ctrl+v"],
-		run: (s) => s.scrollBy(s.halfPage),
-	},
+	{ id: "comment-thread.half-down", title: "Half page down", keys: ["pagedown", "ctrl+d", "ctrl+v"], run: (s) => s.scrollBy(s.halfPage) },
 )

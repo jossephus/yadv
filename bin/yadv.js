@@ -22,16 +22,16 @@ const archMap = {
 	x64: "x64",
 }
 
-const help = `ghui ${packageJson.version}
+const help = `yadv ${packageJson.version}
 
-Terminal UI for GitHub pull requests.
+Yet another diff viewer.
 
 Usage:
-  ghui              Start the TUI
-  ghui upgrade      Upgrade ghui to the latest npm release
-  ghui -v, --version
-                    Print the installed version
-  ghui -h, --help   Show this help message
+  yadv              Start the TUI
+  yadv upgrade      Upgrade yadv to the latest npm release
+  yadv -v, --version
+                     Print the installed version
+  yadv -h, --help   Show this help message
 `
 
 const run = (target, args = process.argv.slice(2)) => {
@@ -101,7 +101,7 @@ const packageName = `${packageJson.name}-${platform}-${arch}`
 const resolveBinary = () => {
 	try {
 		const packageJsonPath = requireFromHere.resolve(`${packageName}/package.json`)
-		return path.join(path.dirname(packageJsonPath), "bin", "ghui")
+		return path.join(path.dirname(packageJsonPath), "bin", "yadv")
 	} catch {
 		return null
 	}

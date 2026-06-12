@@ -6,11 +6,12 @@ export type DiffAlign = "center" | "top" | "bottom"
 
 export interface DiffViewCtx {
 	readonly halfPage: number
-	readonly handleEscape: () => void // closes diff, or clears comment range if active
+	readonly handleEscape: () => void
 	readonly openSelectedComment: () => void
 	readonly toggleRange: () => void
 	readonly toggleView: () => void
 	readonly toggleWrap: () => void
+	readonly toggleWhitespace: () => void
 	readonly reload: () => void
 	readonly nextThread: () => void
 	readonly previousThread: () => void
@@ -19,25 +20,24 @@ export interface DiffViewCtx {
 	readonly alignAnchor: (align: DiffAlign) => void
 	readonly selectSide: (side: DiffSide) => void
 	readonly openChangedFiles: () => void
-	readonly openSubmitReview: () => void
 	readonly nextFile: () => void
 	readonly previousFile: () => void
-	readonly openInBrowser: () => void
 }
 
 const Diff = context<DiffViewCtx>()
 
 export const diffViewKeymap = Diff(
-	{ id: "diff.escape", title: "Close diff / clear range", keys: ["escape"], run: (s) => s.handleEscape() },
+	{ id: "diff.escape", title: "Close modal", keys: ["escape"], run: (s) => s.handleEscape() },
 	{ id: "diff.open-comment", title: "Open / add comment", keys: ["return"], run: (s) => s.openSelectedComment() },
 	{ id: "diff.toggle-range", title: "Toggle comment range", keys: ["v"], run: (s) => s.toggleRange() },
 	{ id: "diff.toggle-view", title: "Toggle split/unified", keys: ["shift+v"], run: (s) => s.toggleView() },
 	{ id: "diff.toggle-wrap", title: "Toggle wrap", keys: ["w"], run: (s) => s.toggleWrap() },
+	{ id: "diff.toggle-whitespace", title: "Toggle whitespace", keys: ["shift+w"], run: (s) => s.toggleWhitespace() },
 	{ id: "diff.reload", title: "Reload diff", keys: ["r"], run: (s) => s.reload() },
 	{ id: "diff.next-thread", title: "Next thread", keys: ["n"], run: (s) => s.nextThread() },
 	{ id: "diff.previous-thread", title: "Previous thread", keys: ["p"], run: (s) => s.previousThread() },
 
-	// Half-page anchor moves preserve viewport row (true vim semantics)
+	// Half-page moves preserve viewport row.
 	{
 		id: "diff.half-up",
 		title: "Half page up",
@@ -51,7 +51,6 @@ export const diffViewKeymap = Diff(
 		run: (s) => s.moveAnchor(s.halfPage, { preserveViewportRow: true }),
 	},
 
-	// Jump-by-8 (shift+arrow / meta+arrow / shift+letter / meta+letter)
 	{
 		id: "diff.jump-up",
 		title: "Jump up",
@@ -65,29 +64,20 @@ export const diffViewKeymap = Diff(
 		run: (s) => s.moveAnchor(8),
 	},
 
-	// Vim count prefixes ("2 k", "15 j", etc.)
 	...countedVerticalBindings<DiffViewCtx>((s, delta) => s.moveAnchor(delta)),
 
-	// Single-step
 	{ id: "diff.up", title: "Up", keys: ["up", "k"], run: (s) => s.moveAnchor(-1) },
 	{ id: "diff.down", title: "Down", keys: ["down", "j"], run: (s) => s.moveAnchor(1) },
-
-	// Side selection
 	{ id: "diff.side-left", title: "Old side", keys: ["left", "h"], run: (s) => s.selectSide("LEFT") },
 	{ id: "diff.side-right", title: "New side", keys: ["right", "l"], run: (s) => s.selectSide("RIGHT") },
 
-	// File nav
 	{ id: "diff.changed-files", title: "Changed files", keys: ["f"], run: (s) => s.openChangedFiles() },
 	{ id: "diff.next-file", title: "Next file", keys: ["]"], run: (s) => s.nextFile() },
 	{ id: "diff.previous-file", title: "Previous file", keys: ["["], run: (s) => s.previousFile() },
-	{ id: "diff.submit-review", title: "Review pull request", keys: ["shift+r"], run: (s) => s.openSubmitReview() },
 
-	// Boundary jumps + align
 	{ id: "diff.first", title: "First comment", keys: ["g g"], run: (s) => s.moveAnchorToBoundary("first") },
 	{ id: "diff.last", title: "Last comment", keys: ["shift+g"], run: (s) => s.moveAnchorToBoundary("last") },
 	{ id: "diff.align-center", title: "Align center", keys: ["z z"], run: (s) => s.alignAnchor("center") },
 	{ id: "diff.align-top", title: "Align top", keys: ["z t"], run: (s) => s.alignAnchor("top") },
 	{ id: "diff.align-bottom", title: "Align bottom", keys: ["z b"], run: (s) => s.alignAnchor("bottom") },
-
-	{ id: "diff.open-browser", title: "Open in browser", keys: ["o"], run: (s) => s.openInBrowser() },
 )

@@ -1,7 +1,6 @@
 import { Context, Effect, Layer, Schema } from "effect"
 import { config } from "../config.js"
 import { errorMessage } from "../errors.js"
-import { classifyGitHubRateLimit } from "./githubRateLimit.js"
 
 export interface CommandResult {
 	readonly stdout: string
@@ -135,7 +134,6 @@ export class CommandRunner extends Context.Service<
 							...attributes,
 							"process.duration_ms": Date.now() - startedAt,
 							"process.exit_code": result.exitCode,
-							...(result.exitCode === 0 ? {} : { "github.rate_limit.kind": classifyGitHubRateLimit(result.stderr || result.stdout) ?? "none" }),
 						}),
 					),
 					Effect.withSpan("ghui.command.runProcess", {

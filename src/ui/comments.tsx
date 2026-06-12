@@ -26,7 +26,6 @@ export interface CommentDisplayItem {
 }
 
 export const commentCountText = (count: number) => (count === 1 ? "1 comment" : `${count} comments`)
-
 export const commentSideColor = (side: DiffCommentSide | null | undefined) => (side === "LEFT" ? colors.status.failing : side === "RIGHT" ? colors.status.passing : colors.count)
 
 const commentTimestamp = (date: Date | null) => {
@@ -91,76 +90,30 @@ export const commentMetaSegments = ({
 	readonly item: CommentDisplayItem
 	readonly markerLabel?: string | null | undefined
 	readonly groups?: readonly (readonly CommentSegment[])[] | undefined
-	// Override the leading glyph + color (e.g. "↳" in muted for a thread reply).
 	readonly marker?: { readonly text: string; readonly fg: string } | undefined
 }): readonly CommentSegment[] => {
 	const sideColor = commentSideColor(item.side)
 	const timestamp = commentTimestamp(item.createdAt)
 	const m = marker ?? { text: "●", fg: colors.count }
-	const segments: CommentSegment[] = [
-		{ text: m.text, fg: m.fg, bold: true },
-		...(markerLabel ? [{ text: ` ${markerLabel}`, fg: sideColor, bold: true }] : []),
-		{ text: " ", fg: colors.muted },
-		{ text: item.author, fg: colors.count, bold: true },
-	]
+	const segments: CommentSegment[] = [{ text: m.text, fg: m.fg, bold: true }, ...(markerLabel ? [{ text: ` ${markerLabel}`, fg: sideColor, bold: true }] : []), { text: " ", fg: colors.muted }, { text: item.author, fg: colors.count, bold: true }]
 	if (timestamp) appendMetaGroup(segments, [{ text: timestamp, fg: colors.muted }])
 	for (const group of groups) appendMetaGroup(segments, group)
 	return segments
 }
 
-// Body indent aligns content under the author name in the meta line above.
 export const COMMENT_BODY_INDENT = "  "
 const COMMENT_QUOTE_PREFIX = `${COMMENT_BODY_INDENT}▎ `
 
 export const commentBodyRows = ({ keyPrefix, body, width }: { readonly keyPrefix: string; readonly body: string; readonly width: number }): readonly CommentDisplayLine[] =>
 	wrapCommentText(body, Math.max(1, width - COMMENT_BODY_INDENT.length)).map((line, index) => ({
 		key: `${keyPrefix}:body:${index}`,
-		segments: line.quote
-			? [{ text: COMMENT_QUOTE_PREFIX, fg: colors.separator }, ...inlineCommentSegments(line.text, colors.muted)]
-			: [{ text: COMMENT_BODY_INDENT, fg: colors.muted }, ...inlineCommentSegments(line.text)],
+		segments: line.quote ? [{ text: COMMENT_QUOTE_PREFIX, fg: colors.separator }, ...inlineCommentSegments(line.text, colors.muted)] : [{ text: COMMENT_BODY_INDENT, fg: colors.muted }, ...inlineCommentSegments(line.text)],
 	}))
 
-export const commentDisplayRows = ({
-	item,
-	width,
-	markerLabel,
-	groups,
-}: {
-	readonly item: CommentDisplayItem
-	readonly width: number
-	readonly markerLabel?: string | null | undefined
-	readonly groups?: readonly (readonly CommentSegment[])[] | undefined
-}): readonly CommentDisplayLine[] => [
+export const commentDisplayRows = ({ item, width, markerLabel, groups }: { readonly item: CommentDisplayItem; readonly width: number; readonly markerLabel?: string | null | undefined; readonly groups?: readonly (readonly CommentSegment[])[] | undefined }): readonly CommentDisplayLine[] => [
 	{ key: `${item.id}:meta`, segments: commentMetaSegments({ item, markerLabel, groups }) },
 	...commentBodyRows({ keyPrefix: item.id, body: item.body, width }),
 ]
-
-// `quotedReplyBody` and `QUOTE_HEADER_RE` are paired — the producer's exact
-// header shape is what the matcher relies on to detect a quote-reply. Keep
-// them here so changes are one edit and the contract is obvious.
-const QUOTE_BODY_LIMIT = 480
-
-export const quotedReplyBody = (author: string, body: string): string => {
-	const trimmed = body.trim().slice(0, QUOTE_BODY_LIMIT)
-	const quoted =
-		trimmed.length > 0
-			? trimmed
-					.split("\n")
-					.map((line) => `> ${line}`)
-					.join("\n")
-			: ""
-	return `> @${author} wrote:\n${quoted}\n\n`
-}
-
-export const QUOTE_HEADER_RE = /^>\s*@(\S+)\s+wrote:\s*\n((?:>[^\n]*(?:\n|$))+)/
-
-// Strip the leading `> @author wrote:` block; used when nesting a quote-reply
-// under its parent so the redundant quote text doesn't render.
-export const stripQuoteHeader = (body: string): string => {
-	const match = QUOTE_HEADER_RE.exec(body)
-	if (!match) return body
-	return body.slice(match[0].length).replace(/^\n+/, "")
-}
 
 export const firstCommentBodyLine = (body: string) => {
 	const text = body.trim().length > 0 ? body : "(empty comment)"
@@ -168,17 +121,7 @@ export const firstCommentBodyLine = (body: string) => {
 	return (newlineIndex >= 0 ? text.slice(0, newlineIndex) : text).trim() || "(empty comment)"
 }
 
-// `selected` lifts every segment to bold + accent fg so the row reads as the
-// active focus without painting a background bar.
-export const CommentSegments = ({
-	segments,
-	hoveredUrl,
-	selected,
-}: {
-	segments: readonly CommentSegment[]
-	hoveredUrl?: string | null | undefined
-	selected?: boolean | undefined
-}) => (
+export const CommentSegments = ({ segments, hoveredUrl, selected }: { segments: readonly CommentSegment[]; hoveredUrl?: string | null | undefined; selected?: boolean | undefined }) => (
 	<>
 		{segments.map((segment, index) => {
 			const attributes = (segment.bold || selected ? TextAttributes.BOLD : 0) | (segment.underline ? TextAttributes.UNDERLINE : 0)
@@ -193,27 +136,12 @@ export const CommentSegments = ({
 	</>
 )
 
-export const CommentSegmentsLine = ({
-	segments,
-	hoveredUrl,
-	bg,
-	selected,
-}: {
-	segments: readonly CommentSegment[]
-	hoveredUrl?: string | null | undefined
-	bg?: string
-	selected?: boolean | undefined
-}) => (
+export const CommentSegmentsLine = ({ segments, hoveredUrl, bg, selected }: { segments: readonly CommentSegment[]; hoveredUrl?: string | null | undefined; bg?: string; selected?: boolean | undefined }) => (
 	<TextLine bg={bg}>
 		<CommentSegments segments={segments} hoveredUrl={hoveredUrl} selected={selected} />
 	</TextLine>
 )
 
 export const CommentBodyLine = ({ body, width }: { body: string; width: number }) => (
-	<CommentSegmentsLine
-		segments={[
-			{ text: COMMENT_BODY_INDENT, fg: colors.muted },
-			{ text: fitCell(firstCommentBodyLine(body), Math.max(1, width - COMMENT_BODY_INDENT.length)), fg: colors.text },
-		]}
-	/>
+	<CommentSegmentsLine segments={[{ text: COMMENT_BODY_INDENT, fg: colors.muted }, { text: fitCell(firstCommentBodyLine(body), Math.max(1, width - COMMENT_BODY_INDENT.length)), fg: colors.text }]} />
 )
