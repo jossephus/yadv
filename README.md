@@ -6,6 +6,18 @@ Yet Another Local Diff Viewer. There are many tui diff viewers, but this one is 
 
 fork of [ghui](https://github.com/kitlangton/ghui) to make it work for local diff changes because its ui is beautiful
 
+## Install
+
+```bash
+npm install -g @jossephus/yadv
+```
+
+Then run:
+
+```bash
+yadv
+```
+
 ## Keybindings
 
 - `up` / `down`: move selection
@@ -23,6 +35,7 @@ fork of [ghui](https://github.com/kitlangton/ghui) to make it work for local dif
 - `left` / `right`: choose the deleted or added side while in split diff comment mode
 - `[` / `]`: switch files while viewing or commenting on a diff
 - `{` / `}`: jump to the previous or next diff hunk
+- `a`: stage or unstage the current hunk
 - `t`: choose a fixed theme, including `System` to match your terminal colors; press `m` in the theme picker to follow the OS light/dark appearance with separate theme choices
 - `q`: quit
 

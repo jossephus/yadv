@@ -49,7 +49,12 @@ export const ChangedFilesModal = ({
 				<HintRow
 					items={[
 						{ key: "↑↓", label: "move" },
-						...(vimModeEnabled ? [{ key: "i", label: vimInsertMode ? "typing" : "insert" }, { key: "esc", label: vimInsertMode ? "normal" : "close" }] : []),
+						...(vimModeEnabled
+							? [
+									{ key: "i", label: vimInsertMode ? "typing" : "insert" },
+									{ key: "esc", label: vimInsertMode ? "normal" : "close" },
+								]
+							: []),
 						{ key: "enter", label: "jump" },
 						...(vimModeEnabled ? [] : [{ key: "esc", label: "close" }]),
 					]}

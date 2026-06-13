@@ -11,7 +11,16 @@ export interface BuildChangedFilesModalCtxInput {
 	readonly leaveVimInsertMode: () => void
 }
 
-export const buildChangedFilesModalCtx = ({ vimModeEnabled, vimInsertMode, hasResults, closeActiveModal, selectChangedFile, moveChangedFileSelection, enterVimInsertMode, leaveVimInsertMode }: BuildChangedFilesModalCtxInput): ChangedFilesModalCtx => ({
+export const buildChangedFilesModalCtx = ({
+	vimModeEnabled,
+	vimInsertMode,
+	hasResults,
+	closeActiveModal,
+	selectChangedFile,
+	moveChangedFileSelection,
+	enterVimInsertMode,
+	leaveVimInsertMode,
+}: BuildChangedFilesModalCtxInput): ChangedFilesModalCtx => ({
 	vimModeEnabled,
 	vimInsertMode,
 	hasResults,

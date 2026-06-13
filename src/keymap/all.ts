@@ -28,7 +28,8 @@ export interface AppCtx {
 
 const App = context<AppCtx>()
 
-const modalActive = (a: AppCtx): boolean => a.changedFilesModalActive || a.commentModalActive || a.commentThreadModalActive || a.commentsOverviewModalActive || a.themeModalActive || a.commandPaletteActive
+const modalActive = (a: AppCtx): boolean =>
+	a.changedFilesModalActive || a.commentModalActive || a.commentThreadModalActive || a.commentsOverviewModalActive || a.themeModalActive || a.commandPaletteActive
 
 export const appKeymap = App(
 	{ id: "command.open", title: "Open command palette", keys: ["ctrl+p", "meta+k"], run: (s) => s.openCommandPalette() },

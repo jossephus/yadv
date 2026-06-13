@@ -4,7 +4,21 @@ import { commentDisplayRows, CommentSegmentsLine } from "../comments.js"
 import { fitCell, HintRow, PlainLine, StandardModal, standardModalDims } from "../primitives.js"
 import type { CommentsOverviewModalState } from "./types.js"
 
-export const CommentsOverviewModal = ({ state, comments, modalWidth, modalHeight, offsetLeft, offsetTop }: { state: CommentsOverviewModalState; comments: readonly LocalDiffComment[]; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number }) => {
+export const CommentsOverviewModal = ({
+	state,
+	comments,
+	modalWidth,
+	modalHeight,
+	offsetLeft,
+	offsetTop,
+}: {
+	state: CommentsOverviewModalState
+	comments: readonly LocalDiffComment[]
+	modalWidth: number
+	modalHeight: number
+	offsetLeft: number
+	offsetTop: number
+}) => {
 	const { contentWidth, bodyHeight } = standardModalDims(modalWidth, modalHeight)
 	const countText = comments.length === 1 ? "1 comment" : `${comments.length} comments`
 	const selectedIndex = comments.length === 0 ? 0 : Math.max(0, Math.min(state.selectedIndex, comments.length - 1))
@@ -34,7 +48,16 @@ export const CommentsOverviewModal = ({ state, comments, modalWidth, modalHeight
 			headerRight={{ text: countText }}
 			subtitle={null}
 			bodyPadding={1}
-			footer={<HintRow items={[{ key: "↑↓", label: "move" }, { key: "y", label: "copy all" }, { key: "d", label: "delete" }, { key: "esc", label: "close" }]} />}
+			footer={
+				<HintRow
+					items={[
+						{ key: "↑↓", label: "move" },
+						{ key: "y", label: "copy all" },
+						{ key: "d", label: "delete" },
+						{ key: "esc", label: "close" },
+					]}
+				/>
+			}
 		>
 			{comments.length === 0 ? (
 				<PlainLine text={fitCell("No comments yet. Press enter on a diff line to add one.", contentWidth)} fg={colors.muted} />

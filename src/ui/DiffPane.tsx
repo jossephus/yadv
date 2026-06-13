@@ -70,7 +70,21 @@ const hunkStatusColor = (status: HunkStatus | null) => {
 	return colors.muted
 }
 
-const FileHeader = ({ file, index, count, width, suffix = "", suffixColor = colors.muted }: { file: StackedDiffFilePatch["file"]; index: number; count: number; width: number; suffix?: string; suffixColor?: string }) => {
+const FileHeader = ({
+	file,
+	index,
+	count,
+	width,
+	suffix = "",
+	suffixColor = colors.muted,
+}: {
+	file: StackedDiffFilePatch["file"]
+	index: number
+	count: number
+	width: number
+	suffix?: string
+	suffixColor?: string
+}) => {
 	const counter = `${index + 1}/${count}`
 	const stats = diffFileStats(file)
 	const statsText = diffFileStatsText(stats)
@@ -264,18 +278,42 @@ export const DiffPane = ({
 				))}
 			</scrollbox>
 			{stickyFile ? (
-				<box position="absolute" top={2} left={0} width={paneWidth} height={2} zIndex={10} flexDirection="column" backgroundColor={colors.background} onMouseScroll={handleStickyMouseScroll}>
+				<box
+					position="absolute"
+					top={2}
+					left={0}
+					width={paneWidth}
+					height={2}
+					zIndex={10}
+					flexDirection="column"
+					backgroundColor={colors.background}
+					onMouseScroll={handleStickyMouseScroll}
+				>
 					{incomingFile ? (
 						<>
 							<Divider width={paneWidth} />
 							<PaddedRow backgroundColor={colors.background}>
-								<FileHeader file={incomingFile.file} index={incomingFile.index} count={readyFiles.length} width={paneWidth} suffix={stickySuffixFor(incomingFile)} suffixColor={stickySuffixColorFor(incomingFile)} />
+								<FileHeader
+									file={incomingFile.file}
+									index={incomingFile.index}
+									count={readyFiles.length}
+									width={paneWidth}
+									suffix={stickySuffixFor(incomingFile)}
+									suffixColor={stickySuffixColorFor(incomingFile)}
+								/>
 							</PaddedRow>
 						</>
 					) : (
 						<>
 							<PaddedRow backgroundColor={colors.background}>
-								<FileHeader file={stickyFile.file} index={stickyFile.index} count={readyFiles.length} width={paneWidth} suffix={stickySuffixFor(stickyFile)} suffixColor={stickySuffixColorFor(stickyFile)} />
+								<FileHeader
+									file={stickyFile.file}
+									index={stickyFile.index}
+									count={readyFiles.length}
+									width={paneWidth}
+									suffix={stickySuffixFor(stickyFile)}
+									suffixColor={stickySuffixColorFor(stickyFile)}
+								/>
 							</PaddedRow>
 							<Divider width={paneWidth} />
 						</>

@@ -18,7 +18,10 @@ export interface CreateLocalDiffCommentInput {
 
 export const commentLocationLabel = (comment: LocalDiffComment) => {
 	const side = comment.side === "LEFT" ? "old" : "new"
-	const range = comment.startLine !== undefined && comment.startLine !== comment.line ? `${Math.min(comment.startLine, comment.line)}-${Math.max(comment.startLine, comment.line)}` : `${comment.line}`
+	const range =
+		comment.startLine !== undefined && comment.startLine !== comment.line
+			? `${Math.min(comment.startLine, comment.line)}-${Math.max(comment.startLine, comment.line)}`
+			: `${comment.line}`
 	return `${comment.path}:${range} (${side})`
 }
 

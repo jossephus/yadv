@@ -27,7 +27,10 @@ export const diffCommentRangeSelection = (start: StackedDiffCommentAnchor | null
 	return start.line <= end.line ? { start, end } : { start: end, end: start }
 }
 
-export const diffCommentRangeContains = (range: DiffCommentRangeSelection, anchor: StackedDiffCommentAnchor) => sameDiffCommentTarget(range.start, anchor) && anchor.line >= range.start.line && anchor.line <= range.end.line
+export const diffCommentRangeContains = (range: DiffCommentRangeSelection, anchor: StackedDiffCommentAnchor) =>
+	sameDiffCommentTarget(range.start, anchor) && anchor.line >= range.start.line && anchor.line <= range.end.line
 
 export const diffCommentRangeLabel = (range: DiffCommentRangeSelection) =>
-	range.start.line === range.end.line ? diffCommentAnchorLabel(range.end) : `${diffCommentSideLabel(range.end)} ${diffCommentLineLabel(range.start)}-${diffCommentLineLabel(range.end)}`
+	range.start.line === range.end.line
+		? diffCommentAnchorLabel(range.end)
+		: `${diffCommentSideLabel(range.end)} ${diffCommentLineLabel(range.start)}-${diffCommentLineLabel(range.end)}`

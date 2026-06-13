@@ -184,7 +184,12 @@ export const CommandPalette = ({
 				<HintRow
 					items={[
 						{ key: "↑↓", label: "select" },
-						...(vimModeEnabled ? [{ key: "i", label: vimInsertMode ? "typing" : "insert" }, { key: "esc", label: vimInsertMode ? "normal" : "close" }] : []),
+						...(vimModeEnabled
+							? [
+									{ key: "i", label: vimInsertMode ? "typing" : "insert" },
+									{ key: "esc", label: vimInsertMode ? "normal" : "close" },
+								]
+							: []),
 						{ key: "enter", label: "run" },
 						...(vimModeEnabled ? [] : [{ key: "esc", label: "close" }]),
 					]}

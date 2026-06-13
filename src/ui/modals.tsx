@@ -8,4 +8,11 @@ export type { ChangedFileSearchResult } from "./modals/shared.js"
 export { filterChangedFiles } from "./modals/shared.js"
 
 export type { ChangedFilesModalState, CommandPaletteState, CommentModalState, CommentThreadModalState, CommentsOverviewModalState, ThemeModalState } from "./modals/types.js"
-export { initialChangedFilesModalState, initialCommandPaletteState, initialCommentModalState, initialCommentThreadModalState, initialCommentsOverviewModalState, initialThemeModalState } from "./modals/types.js"
+export {
+	initialChangedFilesModalState,
+	initialCommandPaletteState,
+	initialCommentModalState,
+	initialCommentThreadModalState,
+	initialCommentsOverviewModalState,
+	initialThemeModalState,
+} from "./modals/types.js"

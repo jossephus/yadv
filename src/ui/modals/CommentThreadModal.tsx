@@ -4,7 +4,23 @@ import { commentDisplayRows, CommentSegmentsLine } from "../comments.js"
 import { fitCell, HintRow, PlainLine, StandardModal, standardModalDims } from "../primitives.js"
 import type { CommentThreadModalState } from "./types.js"
 
-export const CommentThreadModal = ({ state, anchorLabel, comments, modalWidth, modalHeight, offsetLeft, offsetTop }: { state: CommentThreadModalState; anchorLabel: string; comments: readonly LocalDiffComment[]; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number }) => {
+export const CommentThreadModal = ({
+	state,
+	anchorLabel,
+	comments,
+	modalWidth,
+	modalHeight,
+	offsetLeft,
+	offsetTop,
+}: {
+	state: CommentThreadModalState
+	anchorLabel: string
+	comments: readonly LocalDiffComment[]
+	modalWidth: number
+	modalHeight: number
+	offsetLeft: number
+	offsetTop: number
+}) => {
 	const { contentWidth, bodyHeight } = standardModalDims(modalWidth, modalHeight)
 	const countText = comments.length === 1 ? "1 comment" : `${comments.length} comments`
 	const rows = comments.flatMap((comment) => commentDisplayRows({ item: comment, width: contentWidth }))
@@ -22,9 +38,21 @@ export const CommentThreadModal = ({ state, anchorLabel, comments, modalWidth, m
 			headerRight={{ text: countText }}
 			subtitle={<PlainLine text={fitCell(anchorLabel, contentWidth)} fg={colors.muted} />}
 			bodyPadding={1}
-			footer={<HintRow items={[{ key: "↑↓", label: "scroll" }, { key: "enter", label: "comment" }, { key: "esc", label: "close" }]} />}
+			footer={
+				<HintRow
+					items={[
+						{ key: "↑↓", label: "scroll" },
+						{ key: "enter", label: "comment" },
+						{ key: "esc", label: "close" },
+					]}
+				/>
+			}
 		>
-			{visibleRows.length === 0 ? <PlainLine text={fitCell("No comments on this line.", contentWidth)} fg={colors.muted} /> : visibleRows.map((row) => <CommentSegmentsLine key={row.key} segments={row.segments} />)}
+			{visibleRows.length === 0 ? (
+				<PlainLine text={fitCell("No comments on this line.", contentWidth)} fg={colors.muted} />
+			) : (
+				visibleRows.map((row) => <CommentSegmentsLine key={row.key} segments={row.segments} />)
+			)}
 		</StandardModal>
 	)
 }

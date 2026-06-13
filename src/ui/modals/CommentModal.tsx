@@ -19,7 +19,29 @@ const commentModalEditorKey = (state: CommentModalState) => {
 	return target.kind
 }
 
-export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offsetLeft, offsetTop, vimModeEnabled, vimInsertMode, onChange, onSubmit }: { state: CommentModalState; anchorLabel: string; modalWidth: number; modalHeight: number; offsetLeft: number; offsetTop: number; vimModeEnabled: boolean; vimInsertMode: boolean; onChange: (body: string, cursor: number) => void; onSubmit: () => void }) => {
+export const CommentModal = ({
+	state,
+	anchorLabel,
+	modalWidth,
+	modalHeight,
+	offsetLeft,
+	offsetTop,
+	vimModeEnabled,
+	vimInsertMode,
+	onChange,
+	onSubmit,
+}: {
+	state: CommentModalState
+	anchorLabel: string
+	modalWidth: number
+	modalHeight: number
+	offsetLeft: number
+	offsetTop: number
+	vimModeEnabled: boolean
+	vimInsertMode: boolean
+	onChange: (body: string, cursor: number) => void
+	onSubmit: () => void
+}) => {
 	const textareaRef = useRef<TextareaRenderable | null>(null)
 	const { contentWidth, bodyHeight } = standardModalDims(modalWidth, modalHeight)
 	const title = state.target.kind === "edit" ? "Edit comment" : "Comment"
@@ -47,7 +69,22 @@ export const CommentModal = ({ state, anchorLabel, modalWidth, modalHeight, offs
 			headerRight={{ text: vimModeEnabled ? (vimInsertMode ? "insert" : "normal") : "enter save" }}
 			subtitle={<PlainLine text={fitCell(anchorLabel, contentWidth)} fg={colors.muted} />}
 			bodyPadding={1}
-			footer={<HintRow items={vimModeEnabled ? [{ key: "i", label: "insert" }, { key: "esc", label: vimInsertMode ? "save" : "cancel" }] : [{ key: "enter", label: "save" }, { key: "shift-enter", label: "newline" }, { key: "esc", label: "cancel" }]} />}
+			footer={
+				<HintRow
+					items={
+						vimModeEnabled
+							? [
+									{ key: "i", label: "insert" },
+									{ key: "esc", label: vimInsertMode ? "save" : "cancel" },
+								]
+							: [
+									{ key: "enter", label: "save" },
+									{ key: "shift-enter", label: "newline" },
+									{ key: "esc", label: "cancel" },
+								]
+					}
+				/>
+			}
 		>
 			{state.error ? <PlainLine text={fitCell(state.error, contentWidth)} fg={colors.error} /> : null}
 			<textarea
