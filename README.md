@@ -1,6 +1,6 @@
 # yadv
 
-Yet Another Local Diff Viewer for git working trees. There are many local diff viwers, but this one is mine.
+Yet Another Local Diff Viewer. There are many tui diff viewers, but this one is mine.
 
 ![yadv sample](./assets/yadv-sample.png)
 

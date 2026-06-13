@@ -7,7 +7,7 @@ import { GitService } from "./GitService.js"
 import { LocalCommentsService } from "./LocalCommentsService.js"
 
 export const gitRuntime = Atom.runtime(
-	Layer.mergeAll(GitService.layerNoDeps, LocalCommentsService.layerNoDeps.pipe(Layer.provide(GitService.layerNoDeps)), Clipboard.layerNoDeps).pipe(
+	Layer.mergeAll(GitService.layerNoDeps, LocalCommentsService.layerNoDeps, Clipboard.layerNoDeps).pipe(
 		Layer.provide(CommandRunner.layer),
 		Layer.provideMerge(Observability.layer),
 	),

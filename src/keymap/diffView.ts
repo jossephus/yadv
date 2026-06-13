@@ -10,6 +10,7 @@ export interface DiffViewCtx {
 	readonly halfPage: number
 	readonly handleEscape: () => void
 	readonly openSelectedComment: () => void
+	readonly openCommentsOverview: () => void
 	readonly toggleRange: () => void
 	readonly toggleView: () => void
 	readonly toggleWrap: () => void
@@ -41,6 +42,7 @@ export const diffViewKeymap = Diff(
 	{ id: "diff.toggle-wrap", title: "Toggle wrap", keys: ["w"], run: (s) => s.toggleWrap() },
 	{ id: "diff.toggle-whitespace", title: "Toggle whitespace", keys: ["shift+w"], run: (s) => s.toggleWhitespace() },
 	{ id: "diff.reload", title: "Reload diff", keys: ["r"], run: (s) => s.reload() },
+	{ id: "diff.comments-overview", title: "All comments", keys: ["shift+i"], run: (s) => s.openCommentsOverview() },
 	{ id: "diff.next-thread", title: "Next thread", keys: ["n"], run: (s) => s.nextThread() },
 	{ id: "diff.previous-thread", title: "Previous thread", keys: ["p"], run: (s) => s.previousThread() },
 

@@ -1,5 +1,6 @@
 import { Effect } from "effect"
 import * as Atom from "effect/unstable/reactivity/Atom"
+import { Clipboard } from "../../services/Clipboard.js"
 import { GitService } from "../../services/GitService.js"
 import { LocalCommentsService } from "../../services/LocalCommentsService.js"
 import { loadStoredDiffWhitespaceMode } from "../../themeStore.js"
@@ -31,3 +32,5 @@ export const repoNameAtom = gitRuntime.atom(GitService.use((git) => git.repoName
 export const currentBranchAtom = gitRuntime.atom(GitService.use((git) => git.currentBranch()))
 export const localDiffCommentsAtom = gitRuntime.atom(LocalCommentsService.use((comments) => comments.listComments()))
 export const appendLocalDiffCommentAtom = gitRuntime.fn<CreateLocalDiffCommentInput>()((input) => LocalCommentsService.use((comments) => comments.appendComment(input)))
+export const deleteLocalDiffCommentAtom = gitRuntime.fn<string>()((id) => LocalCommentsService.use((comments) => comments.deleteComment(id)))
+export const copyTextAtom = gitRuntime.fn<string>()((text) => Clipboard.use((clipboard) => clipboard.copy(text)))

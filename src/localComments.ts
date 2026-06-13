@@ -16,12 +16,25 @@ export interface CreateLocalDiffCommentInput {
 	readonly startSide?: DiffCommentSide
 }
 
-export interface LocalCommentsFile {
-	readonly version: 1
-	readonly comments: readonly LocalDiffComment[]
+export const commentLocationLabel = (comment: LocalDiffComment) => {
+	const side = comment.side === "LEFT" ? "old" : "new"
+	const range = comment.startLine !== undefined && comment.startLine !== comment.line ? `${Math.min(comment.startLine, comment.line)}-${Math.max(comment.startLine, comment.line)}` : `${comment.line}`
+	return `${comment.path}:${range} (${side})`
 }
 
-export const initialLocalCommentsFile: LocalCommentsFile = {
-	version: 1,
-	comments: [],
-}
+export const formatCommentsForClipboard = (comments: readonly LocalDiffComment[]) =>
+	JSON.stringify({
+		version: 1,
+		comments: comments.map((comment) => ({
+			id: comment.id,
+			path: comment.path,
+			line: comment.line,
+			side: comment.side,
+			author: comment.author,
+			body: comment.body,
+			createdAt: comment.createdAt?.toISOString() ?? null,
+			inReplyTo: comment.inReplyTo,
+			...(comment.startLine === undefined ? {} : { startLine: comment.startLine }),
+			...(comment.startSide === undefined ? {} : { startSide: comment.startSide }),
+		})),
+	})

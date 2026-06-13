@@ -22,6 +22,10 @@ export interface CommentThreadModalState {
 	readonly scrollOffset: number
 }
 
+export interface CommentsOverviewModalState {
+	readonly selectedIndex: number
+}
+
 export interface ThemeModalState {
 	readonly query: string
 	readonly filterMode: boolean
@@ -52,6 +56,10 @@ export const initialCommentModalState: CommentModalState = {
 
 export const initialCommentThreadModalState: CommentThreadModalState = {
 	scrollOffset: 0,
+}
+
+export const initialCommentsOverviewModalState: CommentsOverviewModalState = {
+	selectedIndex: 0,
 }
 
 export const initialThemeModalState: ThemeModalState = {
