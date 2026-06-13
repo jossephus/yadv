@@ -1,5 +1,13 @@
 # @kitlangton/ghui
 
+## 0.0.3
+
+### Patch Changes
+
+- Add hunk-level stage and unstage support in the diff view, show current hunk
+  status in the sticky header, and document installation plus the new `a`
+  keybinding in the README.
+
 ## 0.7.1
 
 ### Patch Changes

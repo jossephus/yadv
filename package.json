@@ -1,6 +1,6 @@
 {
 	"name": "@jossephus/yadv",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Yet another local diff viewer for git working trees",
 	"type": "module",
 	"license": "MIT",
