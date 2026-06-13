@@ -17,6 +17,10 @@ export class GitService extends Context.Service<
 		readonly repoName: () => Effect.Effect<string, CommandError>
 		readonly currentBranch: () => Effect.Effect<string, CommandError>
 		readonly workingTreeDiff: () => Effect.Effect<string, CommandError>
+		readonly unstagedDiff: () => Effect.Effect<string, CommandError>
+		readonly stagedDiff: () => Effect.Effect<string, CommandError>
+		readonly stagePatch: (patch: string) => Effect.Effect<void, CommandError>
+		readonly unstagePatch: (patch: string) => Effect.Effect<void, CommandError>
 	}
 >()("yadv/GitService") {
 	static readonly layerNoDeps = Layer.effect(
@@ -43,7 +47,25 @@ export class GitService extends Context.Service<
 				return result.stdout.trimEnd()
 			})
 
-			return GitService.of({ repoRoot, repoName, currentBranch, workingTreeDiff })
+			const unstagedDiff = Effect.fn("GitService.unstagedDiff")(function* () {
+				const result = yield* command.run("git", ["diff"])
+				return result.stdout.trimEnd()
+			})
+
+			const stagedDiff = Effect.fn("GitService.stagedDiff")(function* () {
+				const result = yield* command.run("git", ["diff", "--cached"])
+				return result.stdout.trimEnd()
+			})
+
+			const stagePatch = Effect.fn("GitService.stagePatch")(function* (patch: string) {
+				yield* command.run("git", ["apply", "--cached", "--unidiff-zero", "-"], { stdin: `${patch}\n` })
+			})
+
+			const unstagePatch = Effect.fn("GitService.unstagePatch")(function* (patch: string) {
+				yield* command.run("git", ["apply", "--cached", "-R", "--unidiff-zero", "-"], { stdin: `${patch}\n` })
+			})
+
+			return GitService.of({ repoRoot, repoName, currentBranch, workingTreeDiff, unstagedDiff, stagedDiff, stagePatch, unstagePatch })
 		}),
 	)
 }

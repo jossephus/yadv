@@ -8,6 +8,7 @@ import type { AppCommand } from "./commands.js"
 import { clampCommandIndex, defineCommand, filterCommands, sortCommandsByActiveScope } from "./commands.js"
 import type { LocalDiffTarget } from "./diffTarget.js"
 import { errorMessage } from "./errors.js"
+import { resolveHunkStageAction, resolveHunkStatus, type HunkStatus } from "./gitHunks.js"
 import { formatCommentsForClipboard } from "./localComments.js"
 import { appKeymap } from "./keymap/all.js"
 import { diffHunkKeys } from "./keymap/diffView.js"
@@ -15,7 +16,7 @@ import { buildChangedFilesModalCtx } from "./keymap/contexts/changedFilesModalCt
 import { buildCommandPaletteCtx } from "./keymap/contexts/commandPaletteCtx.js"
 import { buildThemeModalCtx } from "./keymap/contexts/themeModalCtx.js"
 import { useOpenTuiSubscribe } from "./keyboard/opentuiAdapter.js"
-import { appendLocalDiffCommentAtom, copyTextAtom, currentBranchAtom, deleteLocalDiffCommentAtom, diffFileIndexAtom, diffScrollTopAtom, localDiffCommentsAtom, repoNameAtom, workingTreeDiffAtom } from "./ui/diff/atoms.js"
+import { appendLocalDiffCommentAtom, copyTextAtom, currentBranchAtom, deleteLocalDiffCommentAtom, diffFileIndexAtom, diffScrollTopAtom, localDiffCommentsAtom, readStagedDiffAtom, readUnstagedDiffAtom, repoNameAtom, stagedDiffAtom, stagePatchAtom, unstagePatchAtom, unstagedDiffAtom, workingTreeDiffAtom } from "./ui/diff/atoms.js"
 import {
 	buildStackedDiffFiles,
 	diffAnchorOnSide,
@@ -23,15 +24,16 @@ import {
 	diffFileStats,
 	getStackedDiffHunks,
 	getStackedDiffCommentAnchors,
-	minimizeWhitespaceDiffFiles,
-	PullRequestDiffState,
-	safeDiffFileIndex,
-	scrollTopForVisibleLine,
-	splitPatchFiles,
-	stackedDiffFileIndexAtLine,
-	verticalDiffAnchor,
-	type DiffFilePatch,
-} from "./ui/diff.js"
+		minimizeWhitespaceDiffFiles,
+		PullRequestDiffState,
+		safeDiffFileIndex,
+		scrollTopForVisibleLine,
+		splitPatchFiles,
+		getDiffFileHunks,
+		stackedDiffFileIndexAtLine,
+		verticalDiffAnchor,
+		type DiffFilePatch,
+	} from "./ui/diff.js"
 import { diffCommentRangeContains, diffCommentRangeLabel, diffCommentRangeSelection, diffCommentThreadMapKey, groupDiffCommentThreads, sameDiffCommentTarget } from "./ui/diff/comments.js"
 import { useDiffLineColors } from "./ui/diff/useDiffLineColors.js"
 import { editSingleLineInput, isSingleLineInputKey } from "./ui/singleLineInput.js"
@@ -71,6 +73,8 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	const renderer = useRenderer()
 	const { width, height } = useTerminalDimensions()
 	const diffResult = useAtomValue(workingTreeDiffAtom)
+	const unstagedDiffResult = useAtomValue(unstagedDiffAtom)
+	const stagedDiffResult = useAtomValue(stagedDiffAtom)
 	const repoNameResult = useAtomValue(repoNameAtom)
 	const branchResult = useAtomValue(currentBranchAtom)
 	const localCommentsResult = useAtomValue(localDiffCommentsAtom)
@@ -78,12 +82,18 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	const [diffFileIndex, setDiffFileIndex] = useAtom(diffFileIndexAtom)
 	const [diffScrollTop, setDiffScrollTop] = useAtom(diffScrollTopAtom)
 	const refreshDiff = useAtomRefresh(workingTreeDiffAtom)
+	const refreshUnstagedDiff = useAtomRefresh(unstagedDiffAtom)
+	const refreshStagedDiff = useAtomRefresh(stagedDiffAtom)
 	const refreshRepoName = useAtomRefresh(repoNameAtom)
 	const refreshBranch = useAtomRefresh(currentBranchAtom)
 	const refreshLocalComments = useAtomRefresh(localDiffCommentsAtom)
 	const appendLocalDiffComment = useAtomSet(appendLocalDiffCommentAtom, { mode: "promise" })
 	const deleteLocalDiffComment = useAtomSet(deleteLocalDiffCommentAtom, { mode: "promise" })
 	const copyText = useAtomSet(copyTextAtom, { mode: "promise" })
+	const readUnstagedDiff = useAtomSet(readUnstagedDiffAtom, { mode: "promise" })
+	const readStagedDiff = useAtomSet(readStagedDiffAtom, { mode: "promise" })
+	const stagePatch = useAtomSet(stagePatchAtom, { mode: "promise" })
+	const unstagePatch = useAtomSet(unstagePatchAtom, { mode: "promise" })
 	const spinnerFrame = useSpinnerFrame({ active: diffResult.waiting, reset: !diffResult.waiting })
 	const loadingIndicator = SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length] ?? "·"
 	const [activeModal, setActiveModal] = useState<ActiveModal>("none")
@@ -154,6 +164,9 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 	const diffCommentThreads = useMemo(() => groupDiffCommentThreads(localComments), [localComments])
 	const diffCommentAnchors = useMemo(() => getStackedDiffCommentAnchors(stackedDiffFiles, diffRenderView, diffWrapMode, Math.max(20, width)), [stackedDiffFiles, diffRenderView, diffWrapMode, width])
 	const diffHunks = useMemo(() => getStackedDiffHunks(stackedDiffFiles, diffRenderView, diffWrapMode, Math.max(20, width)), [stackedDiffFiles, diffRenderView, diffWrapMode, width])
+	const displayedFileHunks = useMemo(() => displayFiles.map((file) => getDiffFileHunks(file, diffRenderView, diffWrapMode, Math.max(20, width))), [diffRenderView, diffWrapMode, displayFiles, width])
+	const unstagedPatch = AsyncResult.isSuccess(unstagedDiffResult) ? unstagedDiffResult.value : ""
+	const stagedPatch = AsyncResult.isSuccess(stagedDiffResult) ? stagedDiffResult.value : ""
 	const selectedDiffCommentAnchor = diffCommentAnchors[diffCommentAnchorIndex] ?? null
 	const diffCommentRangeStartAnchor = diffCommentRangeStartIndex === null ? null : diffCommentAnchors[diffCommentRangeStartIndex] ?? null
 	const selectedDiffCommentRange = diffCommentRangeSelection(diffCommentRangeStartAnchor, selectedDiffCommentAnchor)
@@ -362,6 +375,61 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 		[diffCommentAnchors, diffHunks, diffPreferredSide, ensureDiffLineVisible, selectedDiffCommentAnchor, setDiffFileIndex],
 	)
 
+	const selectedDiffHunk = useMemo(() => {
+		const visibleFileIndex = Math.max(0, stackedDiffFileIndexAtLine(stackedDiffFiles, diffScrollTop))
+		const currentLine = selectedDiffCommentAnchor?.fileIndex === visibleFileIndex ? selectedDiffCommentAnchor.renderLine : diffScrollTop
+		const visibleFileHunks = diffHunks.filter((hunk) => hunk.fileIndex === visibleFileIndex)
+		return (
+			visibleFileHunks.find((hunk, index) => {
+				const next = visibleFileHunks[index + 1]
+				return currentLine >= hunk.renderLine && (next ? currentLine < next.renderLine : true)
+			}) ?? visibleFileHunks.find((hunk) => hunk.renderLine >= currentLine) ?? visibleFileHunks[visibleFileHunks.length - 1] ?? null
+		)
+	}, [diffHunks, diffScrollTop, selectedDiffCommentAnchor, stackedDiffFiles])
+
+	const selectedHunkStatus = useMemo<HunkStatus | null>(() => {
+		if (!selectedDiffHunk) return null
+		if (!AsyncResult.isSuccess(unstagedDiffResult) || !AsyncResult.isSuccess(stagedDiffResult)) return null
+		const displayedFile = displayFiles[selectedDiffHunk.fileIndex]
+		const displayedHunk = displayedFileHunks[selectedDiffHunk.fileIndex]?.find((hunk) => hunk.localRenderLine === selectedDiffHunk.localRenderLine)
+		if (!displayedFile || !displayedHunk) return null
+		return resolveHunkStatus({ displayedFile, displayedHunk, unstagedPatch, stagedPatch }).status
+	}, [displayFiles, displayedFileHunks, selectedDiffHunk, stagedDiffResult, stagedPatch, unstagedDiffResult, unstagedPatch])
+
+	const toggleSelectedHunkStage = useCallback(() => {
+		const currentHunk = selectedDiffHunk
+		if (!currentHunk) {
+			flashNotice("No hunk selected")
+			return
+		}
+
+		const displayedFile = displayFiles[currentHunk.fileIndex]
+		const displayedHunk = displayedFileHunks[currentHunk.fileIndex]?.find((hunk) => hunk.localRenderLine === currentHunk.localRenderLine)
+		if (!displayedFile || !displayedHunk) {
+			flashNotice("Could not resolve hunk")
+			return
+		}
+
+		void Promise.all([readUnstagedDiff(undefined), readStagedDiff(undefined)])
+			.then(([unstagedPatch, stagedPatch]) => {
+				const resolved = resolveHunkStageAction({ displayedFile, displayedHunk, unstagedPatch, stagedPatch })
+				if (!resolved) {
+					flashNotice("Hunk could not be staged or unstaged safely")
+					return
+				}
+				const apply = resolved.action === "stage" ? stagePatch : unstagePatch
+				return apply(resolved.patch).then(() => {
+					refreshDiff()
+					refreshUnstagedDiff()
+					refreshStagedDiff()
+					refreshRepoName()
+					refreshBranch()
+					flashNotice(resolved.action === "stage" ? "Staged hunk" : "Unstaged hunk")
+				})
+			})
+			.catch((error) => flashNotice(errorMessage(error)))
+	}, [selectedDiffHunk, displayFiles, displayedFileHunks, readUnstagedDiff, readStagedDiff, refreshUnstagedDiff, refreshStagedDiff, flashNotice, stagePatch, unstagePatch, refreshDiff, refreshRepoName, refreshBranch])
+
 	const openDiffCommentModal = useCallback(() => {
 		setVimInsertMode(vimModeEnabled)
 		setCommentModal({ ...initialCommentModalState, target: { kind: "diff" } })
@@ -478,6 +546,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 			defineCommand({ id: "vim-mode.toggle", title: `Vim Mode: ${vimModeEnabled ? "Off" : "On"}`, scope: "View", run: toggleVimMode }),
 			defineCommand({ id: "diff.previous-hunk", title: "Previous Hunk", scope: "Navigation", shortcut: diffHunkKeys.previous[0], run: () => moveDiffHunk(-1) }),
 			defineCommand({ id: "diff.next-hunk", title: "Next Hunk", scope: "Navigation", shortcut: diffHunkKeys.next[0], run: () => moveDiffHunk(1) }),
+			defineCommand({ id: "diff.toggle-hunk-stage", title: `Hunk: ${selectedHunkStatus ?? "Unknown"}`, scope: "Diff", shortcut: "a", run: toggleSelectedHunkStage }),
 			defineCommand({
 				id: "diff.toggle-view",
 				title: `Diff View: ${diffRenderView === "split" ? "Unified" : "Split"}`,
@@ -527,13 +596,15 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				shortcut: "r",
 				run: () => {
 					refreshDiff()
+					refreshUnstagedDiff()
+					refreshStagedDiff()
 					refreshRepoName()
 					refreshBranch()
 				},
 			}),
 			defineCommand({ id: "yadv.quit", title: "Quit", scope: "System", shortcut: "q", run: () => renderer.destroy() }),
 		],
-		[diffFileIndex, diffRenderView, diffWhitespaceMode, diffWrapMode, displayFiles, moveDiffHunk, openCommentsOverview, openSelectedDiffComment, openThemeModal, refreshBranch, refreshDiff, refreshRepoName, renderer, toggleDiffCommentRange, toggleVimMode, vimModeEnabled],
+		[diffFileIndex, diffRenderView, diffWhitespaceMode, diffWrapMode, displayFiles, moveDiffHunk, openCommentsOverview, openSelectedDiffComment, openThemeModal, refreshBranch, refreshDiff, refreshRepoName, refreshStagedDiff, refreshUnstagedDiff, renderer, selectedHunkStatus, toggleDiffCommentRange, toggleSelectedHunkStage, toggleVimMode, vimModeEnabled],
 	)
 	const filteredCommands = useMemo(() => sortCommandsByActiveScope(filterCommands(commands, commandPalette.query), "Diff"), [commandPalette.query, commands])
 	const selectedCommand = filteredCommands[clampCommandIndex(commandPalette.selectedIndex, filteredCommands)] ?? null
@@ -649,6 +720,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				previousFile: () => selectDiffFile(diffFileIndex - 1),
 				nextHunk: () => moveDiffHunk(1),
 				previousHunk: () => moveDiffHunk(-1),
+				toggleSelectedHunkStage,
 			},
 			openCommandPalette: () => {
 				setVimInsertMode(false)
@@ -681,6 +753,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 					selectedCommentAnchor={selectedDiffCommentAnchor}
 					selectedCommentLabel={selectedDiffCommentLabel}
 					selectedCommentThread={selectedDiffCommentThread}
+					selectedHunkStatus={selectedHunkStatus}
 					onSelectCommentLine={selectDiffCommentLine}
 					themeId={themeId}
 					themeGeneration={systemThemeGeneration}
@@ -720,7 +793,7 @@ export const App = ({ systemThemeGeneration = 0 }: AppProps) => {
 				{activeModal === "commentThread" ? <CommentThreadModal state={commentThreadModal} anchorLabel={selectedDiffCommentAnchor ? `${selectedDiffCommentAnchor.path} ${selectedDiffCommentLabel ?? ""}`.trim() : "Selected thread"} comments={selectedDiffCommentThread} modalWidth={modalWidth} modalHeight={Math.min(height - 4, 22)} offsetLeft={modalOffsetLeft} offsetTop={Math.max(0, centeredOffset(height, Math.min(height - 4, 22)))} /> : null}
 				{activeModal === "commentsOverview" ? <CommentsOverviewModal state={commentsOverviewModal} comments={localComments} modalWidth={modalWidth} modalHeight={Math.min(height - 4, 22)} offsetLeft={modalOffsetLeft} offsetTop={Math.max(0, centeredOffset(height, Math.min(height - 4, 22)))} /> : null}
 			</box>
-			<PlainLine text={centerCell(notice ?? (vimModeEnabled ? "vim on   i comment   V range   I comments   s view   { } hunks   f files   w wrap   W whitespace   ctrl-p commands   q quit" : "enter comment   v range   I comments   f files   V view   w wrap   W whitespace   r reload   ctrl-p commands   q quit"), width)} fg={notice ? colors.text : colors.muted} />
+			<PlainLine text={centerCell(notice ?? (vimModeEnabled ? "vim on   i comment   V range   a stage   s view   { } hunks   f files   w wrap   W whitespace   ctrl-p commands   q quit" : "enter comment   v range   a stage   I comments   f files   V view   w wrap   W whitespace   r reload   ctrl-p commands   q quit"), width)} fg={notice ? colors.text : colors.muted} />
 		</box>
 	)
 }

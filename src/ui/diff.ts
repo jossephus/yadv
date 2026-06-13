@@ -55,6 +55,13 @@ export interface StackedDiffHunk {
 	readonly renderLine: number
 }
 
+export interface DiffFileHunk {
+	readonly header: string
+	readonly body: readonly string[]
+	readonly patch: string
+	readonly localRenderLine: number
+}
+
 export type PullRequestDiffState = Data.TaggedEnum<{
 	Loading: {}
 	Ready: { readonly patch: string; readonly files: readonly DiffFilePatch[] }
@@ -327,6 +334,98 @@ export const splitPatchFiles = (patch: string): readonly DiffFilePatch[] => {
 		const name = patchFileName(filePatch)
 		return { name, filetype: pathToFiletype(name), patch: filePatch }
 	})
+}
+
+const splitPatchHeaderAndBody = (patch: string) => {
+	const lines = patch.split("\n")
+	const firstHunkIndex = lines.findIndex((line) => line.match(hunkHeaderPattern))
+	return {
+		headerLines: firstHunkIndex < 0 ? lines : lines.slice(0, firstHunkIndex),
+		bodyLines: firstHunkIndex < 0 ? [] : lines.slice(firstHunkIndex),
+	}
+}
+
+export const getDiffFileHunks = (file: DiffFilePatch, view: DiffView = "unified", wrapMode: DiffWrapMode = "none", width = 120): readonly DiffFileHunk[] => {
+	const { headerLines, bodyLines } = splitPatchHeaderAndBody(file.patch)
+	const contentWidth = diffContentWidth(file.patch.split("\n"), view, width)
+	const hunks: DiffFileHunk[] = []
+	let renderLine = 0
+
+	for (let index = 0; index < bodyLines.length; ) {
+		const line = bodyLines[index]!
+		if (!line.match(hunkHeaderPattern)) {
+			index++
+			continue
+		}
+
+		const header = line
+		let end = index + 1
+		while (end < bodyLines.length && !bodyLines[end]!.match(hunkHeaderPattern)) end++
+		const body = bodyLines.slice(index + 1, end)
+		let pendingHunkStart = true
+		let localRenderLine = renderLine
+		let deletions: number[] = []
+		let additions: number[] = []
+
+		const flushChangeBlock = () => {
+			if (deletions.length === 0 && additions.length === 0) return
+			if (view === "split") {
+				const rows = Math.max(deletions.length, additions.length)
+				for (let changeIndex = 0; changeIndex < rows; changeIndex++) {
+					const deletionCount = changeIndex < deletions.length ? deletions[changeIndex]! : 1
+					const additionCount = changeIndex < additions.length ? additions[changeIndex]! : 1
+					renderLine += Math.max(deletionCount, additionCount)
+				}
+			} else {
+				for (const deletion of deletions) renderLine += deletion
+				for (const addition of additions) renderLine += addition
+			}
+			deletions = []
+			additions = []
+		}
+
+		for (const bodyLine of body) {
+			const firstChar = bodyLine[0]
+			if (firstChar === "\\") continue
+			if (firstChar === "-") {
+				if (pendingHunkStart) {
+					localRenderLine = renderLine
+					pendingHunkStart = false
+				}
+				deletions.push(estimatedWrappedLineCount(bodyLine.slice(1), contentWidth, wrapMode))
+				continue
+			}
+			if (firstChar === "+") {
+				if (pendingHunkStart) {
+					localRenderLine = renderLine
+					pendingHunkStart = false
+				}
+				additions.push(estimatedWrappedLineCount(bodyLine.slice(1), contentWidth, wrapMode))
+				continue
+			}
+			if (firstChar === " ") {
+				flushChangeBlock()
+				renderLine += estimatedWrappedLineCount(bodyLine.slice(1), contentWidth, wrapMode)
+				continue
+			}
+		}
+
+		flushChangeBlock()
+		if (pendingHunkStart) {
+			index = end
+			continue
+		}
+
+		hunks.push({
+			header,
+			body,
+			patch: normalizeHunkLineCounts([...headerLines, header, ...body].join("\n")).trimEnd(),
+			localRenderLine,
+		})
+		index = end
+	}
+
+	return hunks
 }
 
 export const pullRequestDiffKey = (pullRequest: PullRequestItem) => `${pullRequest.repository}#${pullRequest.number}:${pullRequest.headRefOid}`
@@ -630,7 +729,7 @@ export const getStackedDiffHunks = (
 	width = 120,
 ): readonly StackedDiffHunk[] =>
 	stackedFiles.flatMap((stackedFile) =>
-		getDiffHunkRenderLines(stackedFile.file, view, wrapMode, width).map((localRenderLine) => ({
+		getDiffFileHunks(stackedFile.file, view, wrapMode, width).map(({ localRenderLine }) => ({
 			fileIndex: stackedFile.index,
 			localRenderLine,
 			renderLine: stackedFile.diffStartLine + localRenderLine,

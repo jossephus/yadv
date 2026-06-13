@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import {
 	buildStackedDiffFiles,
 	diffAnchorOnSide,
+	getDiffFileHunks,
 	getDiffHunkRenderLines,
 	getStackedDiffHunks,
 	getDiffCommentAnchors,
@@ -15,6 +16,7 @@ import {
 	splitPatchFiles,
 	verticalDiffAnchor,
 } from "../src/ui/diff.ts"
+import { resolveHunkStageAction } from "../src/gitHunks.ts"
 
 const patch = `diff --git a/one.ts b/one.ts
 --- a/one.ts
@@ -70,6 +72,37 @@ describe("stacked diff helpers", () => {
 		expect(getStackedDiffHunks(stacked, "unified", "none", 120)).toEqual([
 			{ fileIndex: 0, localRenderLine: 1, renderLine: stacked[0]!.diffStartLine + 1 },
 			{ fileIndex: 0, localRenderLine: 4, renderLine: stacked[0]!.diffStartLine + 4 },
+		])
+	})
+
+	test("extracts standalone file patches for individual hunks", () => {
+		const [file] = splitPatchFiles(`diff --git a/hunks.ts b/hunks.ts
+--- a/hunks.ts
++++ b/hunks.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1
+@@ -10,2 +10,2 @@
+ const two = true
+-const beforeTwo = 2
++const afterTwo = 2`)
+
+		expect(getDiffFileHunks(file!, "unified", "none", 120).map((hunk) => hunk.patch)).toEqual([
+			`diff --git a/hunks.ts b/hunks.ts
+--- a/hunks.ts
++++ b/hunks.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1`,
+			`diff --git a/hunks.ts b/hunks.ts
+--- a/hunks.ts
++++ b/hunks.ts
+@@ -10,2 +10,2 @@
+ const two = true
+-const beforeTwo = 2
++const afterTwo = 2`,
 		])
 	})
 
@@ -284,5 +317,112 @@ ${additions}`)
 
 		expect(left).toMatchObject({ side: "LEFT", kind: "deletion", text: "const oldValue = 1" })
 		expect(diffAnchorOnSide(anchors, unchanged, "LEFT")).toBeNull()
+	})
+})
+
+describe("hunk stage resolution", () => {
+	test("prefers staging when the displayed hunk only exists in the unstaged diff", () => {
+		const [displayedFile] = splitPatchFiles(`diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1`)
+		const [displayedHunk] = getDiffFileHunks(displayedFile!)
+
+		expect(
+			resolveHunkStageAction({
+				displayedFile: displayedFile!,
+				displayedHunk: displayedHunk!,
+				unstagedPatch: displayedFile!.patch,
+				stagedPatch: "",
+			}),
+		).toEqual({ action: "stage", patch: displayedFile!.patch })
+	})
+
+	test("prefers unstaging when the displayed hunk only exists in the staged diff", () => {
+		const [displayedFile] = splitPatchFiles(`diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1`)
+		const [displayedHunk] = getDiffFileHunks(displayedFile!)
+
+		expect(
+			resolveHunkStageAction({
+				displayedFile: displayedFile!,
+				displayedHunk: displayedHunk!,
+				unstagedPatch: "",
+				stagedPatch: displayedFile!.patch,
+			}),
+		).toEqual({ action: "unstage", patch: displayedFile!.patch })
+	})
+
+	test("refuses ambiguous hunks that exist in both staged and unstaged diffs", () => {
+		const [displayedFile] = splitPatchFiles(`diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -1,2 +1,2 @@
+ const one = true
+-const before = 1
++const after = 1`)
+		const [displayedHunk] = getDiffFileHunks(displayedFile!)
+
+		expect(
+			resolveHunkStageAction({
+				displayedFile: displayedFile!,
+				displayedHunk: displayedHunk!,
+				unstagedPatch: displayedFile!.patch,
+				stagedPatch: displayedFile!.patch,
+			}),
+		).toBeNull()
+	})
+
+	test("matches hunks even when staged changes shift later line numbers", () => {
+		const [displayedFile] = splitPatchFiles(`diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -1,2 +1,3 @@
+ const a = 1
++const staged = true
+ const b = 2
+@@ -10,2 +11,3 @@
+ const c = 3
++const unstaged = true
+ const d = 4`)
+		const displayedHunks = getDiffFileHunks(displayedFile!)
+
+		expect(
+			resolveHunkStageAction({
+				displayedFile: displayedFile!,
+				displayedHunk: displayedHunks[1]!,
+				unstagedPatch: `diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -11,2 +11,3 @@
+ const c = 3
++const unstaged = true
+ const d = 4`,
+				stagedPatch: `diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -1,2 +1,3 @@
+ const a = 1
++const staged = true
+ const b = 2`,
+			}),
+		).toEqual({
+			action: "stage",
+			patch: `diff --git a/file.ts b/file.ts
+--- a/file.ts
++++ b/file.ts
+@@ -11,2 +11,3 @@
+ const c = 3
++const unstaged = true
+ const d = 4`,
+		})
 	})
 })

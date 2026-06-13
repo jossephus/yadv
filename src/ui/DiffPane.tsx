@@ -1,6 +1,7 @@
 import type { DiffRenderable, MouseEvent, ScrollBoxRenderable } from "@opentui/core"
 import { useMemo, type MutableRefObject } from "react"
 import type { LocalDiffTarget } from "../diffTarget.js"
+import type { HunkStatus } from "../gitHunks.js"
 import type { LocalDiffComment } from "../localComments.js"
 import { colors, lineNumberTextColor, type ThemeId } from "./colors.js"
 import {
@@ -53,6 +54,22 @@ const FileStats = ({ stats }: { stats: DiffFileStats }) => (
 	</>
 )
 
+const hunkStatusText = (status: HunkStatus | null) => {
+	if (status === "unstaged") return "  unstaged"
+	if (status === "staged") return "  staged"
+	if (status === "mixed") return "  mixed"
+	if (status === "unknown") return "  unknown"
+	return ""
+}
+
+const hunkStatusColor = (status: HunkStatus | null) => {
+	if (status === "unstaged") return colors.status.review
+	if (status === "staged") return colors.status.passing
+	if (status === "mixed") return colors.status.draft
+	if (status === "unknown") return colors.muted
+	return colors.muted
+}
+
 const FileHeader = ({ file, index, count, width, suffix = "", suffixColor = colors.muted }: { file: StackedDiffFilePatch["file"]; index: number; count: number; width: number; suffix?: string; suffixColor?: string }) => {
 	const counter = `${index + 1}/${count}`
 	const stats = diffFileStats(file)
@@ -85,6 +102,7 @@ export const DiffPane = ({
 	selectedCommentAnchor,
 	selectedCommentLabel,
 	selectedCommentThread,
+	selectedHunkStatus,
 	onSelectCommentLine,
 	themeId,
 	themeGeneration,
@@ -104,6 +122,7 @@ export const DiffPane = ({
 	selectedCommentAnchor: StackedDiffCommentAnchor | null
 	selectedCommentLabel: string | null
 	selectedCommentThread: readonly LocalDiffComment[]
+	selectedHunkStatus: HunkStatus | null
 	onSelectCommentLine: (renderLine: number, side: "LEFT" | "RIGHT" | null) => void
 	themeId: ThemeId
 	themeGeneration: number
@@ -164,6 +183,16 @@ export const DiffPane = ({
 		return `  ${selectedCommentLabel ?? diffCommentAnchorLabel(selectedCommentAnchor)}`
 	}
 	const stickyCommentColor = selectedCommentAnchor?.side === "LEFT" ? colors.status.failing : colors.status.passing
+	const stickyHunkLabel = hunkStatusText(selectedHunkStatus)
+	const stickyHunkColor = hunkStatusColor(selectedHunkStatus)
+	const stickySuffixFor = (stackedFile: StackedDiffFilePatch | undefined) => {
+		const commentLabel = stickyCommentLabelFor(stackedFile)
+		return `${commentLabel}${stickyHunkLabel}`
+	}
+	const stickySuffixColorFor = (stackedFile: StackedDiffFilePatch | undefined) => {
+		if (selectedCommentAnchor?.fileIndex === stackedFile?.index && stickyCommentLabelFor(stackedFile)) return stickyCommentColor
+		return stickyHunkColor
+	}
 	const diffLineNumberFg = lineNumberTextColor(colors.diff.lineNumberBg, colors.text)
 	const commentPeek = selectedCommentThread.length > 0 ? selectedCommentThread[selectedCommentThread.length - 1] : null
 	const commentPeekMeta =
@@ -240,13 +269,13 @@ export const DiffPane = ({
 						<>
 							<Divider width={paneWidth} />
 							<PaddedRow backgroundColor={colors.background}>
-								<FileHeader file={incomingFile.file} index={incomingFile.index} count={readyFiles.length} width={paneWidth} suffix={stickyCommentLabelFor(incomingFile)} suffixColor={stickyCommentColor} />
+								<FileHeader file={incomingFile.file} index={incomingFile.index} count={readyFiles.length} width={paneWidth} suffix={stickySuffixFor(incomingFile)} suffixColor={stickySuffixColorFor(incomingFile)} />
 							</PaddedRow>
 						</>
 					) : (
 						<>
 							<PaddedRow backgroundColor={colors.background}>
-								<FileHeader file={stickyFile.file} index={stickyFile.index} count={readyFiles.length} width={paneWidth} suffix={stickyCommentLabelFor(stickyFile)} suffixColor={stickyCommentColor} />
+								<FileHeader file={stickyFile.file} index={stickyFile.index} count={readyFiles.length} width={paneWidth} suffix={stickySuffixFor(stickyFile)} suffixColor={stickySuffixColorFor(stickyFile)} />
 							</PaddedRow>
 							<Divider width={paneWidth} />
 						</>

@@ -27,6 +27,7 @@ export interface DiffViewCtx {
 	readonly previousFile: () => void
 	readonly nextHunk: () => void
 	readonly previousHunk: () => void
+	readonly toggleSelectedHunkStage: () => void
 }
 
 const Diff = context<DiffViewCtx>()
@@ -85,6 +86,7 @@ export const diffViewKeymap = Diff(
 	{ id: "diff.previous-file", title: "Previous file", keys: ["["], run: (s) => s.previousFile() },
 	{ id: "diff.next-hunk", title: "Next hunk", keys: [...diffHunkKeys.next], run: (s) => s.nextHunk() },
 	{ id: "diff.previous-hunk", title: "Previous hunk", keys: [...diffHunkKeys.previous], run: (s) => s.previousHunk() },
+	{ id: "diff.toggle-hunk-stage", title: "Stage / unstage hunk", keys: ["a"], run: (s) => s.toggleSelectedHunkStage() },
 
 	{ id: "diff.first", title: "First comment", keys: ["g g"], run: (s) => s.moveAnchorToBoundary("first") },
 	{ id: "diff.last", title: "Last comment", keys: ["shift+g"], run: (s) => s.moveAnchorToBoundary("last") },
