@@ -41,8 +41,6 @@ jobs:
         include:
           - target: darwin-arm64
             runner: macos-15
-          - target: darwin-x64
-            runner: macos-15-intel
           - target: linux-arm64
             runner: ubuntu-24.04-arm
           - target: linux-x64
@@ -80,7 +78,7 @@ jobs:
             echo "${name}@${version} already published."
             exit 0
           fi
-          npm publish "${package_dir}"
+          npm publish "${package_dir}" --access=public
 
       - name: Upload standalone release assets
         env:
@@ -122,4 +120,4 @@ jobs:
             echo "${name}@${version} already published."
             exit 0
           fi
-          npm publish
+          npm publish --access=public
